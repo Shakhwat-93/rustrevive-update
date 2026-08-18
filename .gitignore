@@ -1,0 +1,54 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Next.js Build Artifacts
+/.next/
+/out/
+/build
+/dist
+
+# Environment Variables & Secrets (NEVER COMMIT)
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.enc
+
+# Vitest & Testing
+/coverage
+/.vitest
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.log
+
+# Editor & OS Metadata
+.DS_Store
+*.pem
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# TypeScript Cache
+*.tsbuildinfo
+next-env.d.ts

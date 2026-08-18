@@ -1,0 +1,57 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  validate:
+    name: Lint, Typecheck, Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Run Automated Vitest Suite
+        run: npm run test
+        env:
+          NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+          NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key"
+          NEXT_PUBLIC_MEDIA_URL: "https://media.rustrevive.store"
+          SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
+          R2_ACCOUNT_ID: "test-account-id"
+          R2_ACCESS_KEY_ID: "test-access-key"
+          R2_SECRET_ACCESS_KEY: "test-secret-key"
+          R2_BUCKET_NAME: "rustrevive-media-test"
+
+      - name: Build Next.js Production Bundle
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: "https://rustrevive.store"
+          NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key"
+          NEXT_PUBLIC_MEDIA_URL: "https://media.rustrevive.store"
+          SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
+          R2_ACCOUNT_ID: "test-account-id"
+          R2_ACCESS_KEY_ID: "test-access-key"
+          R2_SECRET_ACCESS_KEY: "test-secret-key"
+          R2_BUCKET_NAME: "rustrevive-media-prod"

@@ -1,0 +1,21 @@
+# Docker Compose for Local Development
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    container_name: rustrevive-web-local
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    env_file:
+      - ../.env.local
+    networks:
+      - rustrevive_dev_net
+
+networks:
+  rustrevive_dev_net:
+    driver: bridge

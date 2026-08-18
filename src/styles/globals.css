@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* 8pt Spacing Scale System */
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-12: 48px;
+    --spacing-16: 64px;
+    --spacing-24: 96px;
+    --spacing-32: 128px;
+
+    /* Color Tokens (Light & Warm Foundation) */
+    --color-bg-light: #fbf9f5;
+    --color-bg-bone: #f4eee3;
+    --color-bg-sand: #ebe2d1;
+
+    /* Color Tokens (Dark & Cinematic Foundation) */
+    --color-bg-dark: #0e0d0c;
+    --color-bg-dark-surface: #141312;
+    --color-bg-dark-card: #1c1a18;
+    --color-bg-dark-elevated: #24221f;
+
+    /* Accent & Brand Colors */
+    --color-accent-rust: #9e472a;
+    --color-accent-rust-hover: #b85433;
+    --color-accent-rust-subtle: rgba(158, 71, 42, 0.12);
+    --color-accent-terracotta: #873c22;
+    --color-accent-sage: #5e6b5d;
+
+    /* Borders */
+    --color-border-dark: #262421;
+    --color-border-dark-strong: #383530;
+    --color-border-light: #ded7c8;
+    --color-border-light-strong: #b8b09f;
+
+    /* Text & Typography */
+    --color-text-dark-primary: #fbf9f5;
+    --color-text-dark-secondary: #9c9689;
+    --color-text-dark-muted: #666258;
+
+    --color-text-light-primary: #141312;
+    --color-text-light-secondary: #5c574e;
+    --color-text-light-muted: #8c8577;
+
+    /* Transitions */
+    --transition-editorial: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-slow: all 700ms cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-instant: all 150ms ease;
+  }
+
+  body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-dark-primary);
+    font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-rust);
+    color: #ffffff;
+  }
+}
+
+/* Typography Utility Classes */
+.font-serif-editorial {
+  font-family: var(--font-serif), Georgia, Cambria, "Times New Roman", serif;
+}
+
+.font-sans-ui {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.font-mono-meta {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Custom Editorial Utilities */
+.tracking-widest-editorial {
+  letter-spacing: 0.22em;
+}
+
+.tracking-tight-display {
+  letter-spacing: -0.035em;
+}
+
+/* Horizontal Scrollbar Hide */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Thin Grid Rule Utility */
+.border-subtle-dark {
+  border-color: var(--color-border-dark);
+}
+
+.border-subtle-light {
+  border-color: var(--color-border-light);
+}
+
+/* Smooth Image Zoom on Container Hover */
+.group-editorial-hover:hover .editorial-img-target {
+  transform: scale(1.04);
+}
+
+.editorial-img-target {
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
