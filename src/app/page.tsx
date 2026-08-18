@@ -1,3 +1,4 @@
+import { CMSService } from "@/lib/cms/cms.service";
 import { EditorialHeader } from "@/components/navigation/editorial-header";
 import { CampaignHero } from "@/components/editorial/CampaignHero";
 import { EditorialCollectionGrid } from "@/components/editorial/EditorialCollectionGrid";
@@ -12,46 +13,32 @@ import { TrustGrid } from "@/components/editorial/TrustGrid";
 import { CommunitySection } from "@/components/editorial/CommunitySection";
 import { EditorialFooter } from "@/components/editorial/EditorialFooter";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const cmsConfig = await CMSService.getPublishedHomepageConfig();
+
+  const isEnabled = (id: string) => {
+    const sec = cmsConfig.sections.find((s) => s.id === id);
+    return sec ? sec.enabled : true;
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#fbf9f5] text-[#141312] selection:bg-[#9e472a] selection:text-white">
       {/* Navigation Header */}
       <EditorialHeader />
 
-      {/* Main Editorial Flow */}
+      {/* Dynamic Main Flow Controlled by CMS Studio */}
       <main className="flex-1 flex flex-col w-full">
-        {/* 01 / Campaign Hero */}
-        <CampaignHero />
-
-        {/* 01 / Asymmetric Collection Grid */}
-        <EditorialCollectionGrid />
-
-        {/* 02 / The R&R Statement */}
-        <StatementSection />
-
-        {/* 03 / The Edit (Featured Products) */}
-        <FeaturedProducts />
-
-        {/* 04 / The Brand Story */}
-        <BrandStory />
-
-        {/* 05 / Lookbook Gallery */}
-        <LookbookGallery />
-
-        {/* 06 / Category Explorer */}
-        <CategoryExplorer />
-
-        {/* 07 / The Manifesto */}
-        <ManifestoSection />
-
-        {/* 08 / Everyday Essentials (Commerce Grid) */}
-        <EverydayEssentials />
-
-        {/* 09 / Service & Trust Grid */}
-        <TrustGrid />
-
-        {/* 10 / Community & Dispatch */}
-        <CommunitySection />
+        {isEnabled("hero") && <CampaignHero />}
+        {isEnabled("collections") && <EditorialCollectionGrid />}
+        {isEnabled("statement") && <StatementSection />}
+        {isEnabled("featured_products") && <FeaturedProducts />}
+        {isEnabled("brand_story") && <BrandStory />}
+        {isEnabled("lookbook") && <LookbookGallery />}
+        {isEnabled("category_explorer") && <CategoryExplorer />}
+        {isEnabled("manifesto") && <ManifestoSection />}
+        {isEnabled("everyday_essentials") && <EverydayEssentials />}
+        {isEnabled("trust_grid") && <TrustGrid />}
+        {isEnabled("community") && <CommunitySection />}
       </main>
 
       {/* Editorial Footer */}
