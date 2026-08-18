@@ -14,9 +14,9 @@ export function Logo({
   showTagline = false,
 }: LogoProps) {
   const sizeClasses = {
-    sm: "text-lg tracking-widest",
-    md: "text-xl md:text-2xl tracking-[0.25em]",
-    lg: "text-3xl md:text-4xl tracking-[0.28em]",
+    sm: "text-base sm:text-lg tracking-[0.16em] sm:tracking-[0.2em]",
+    md: "text-lg sm:text-xl md:text-2xl tracking-[0.18em] sm:tracking-[0.22em]",
+    lg: "text-2xl sm:text-3xl md:text-4xl tracking-[0.22em] sm:tracking-[0.26em]",
   };
 
   const colorClasses = {
@@ -28,16 +28,18 @@ export function Logo({
   return (
     <Link
       href="/"
-      className={`inline-flex flex-col items-start select-none group transition-opacity hover:opacity-90 ${className}`}
+      className={`inline-flex flex-col items-start select-none group transition-opacity hover:opacity-85 whitespace-nowrap ${className}`}
       aria-label="Rust & Revive Home"
     >
-      <div className={`font-serif-editorial font-medium uppercase leading-none ${sizeClasses[size]} ${colorClasses[variant]}`}>
+      <div
+        className={`font-serif-editorial font-medium uppercase leading-none whitespace-nowrap ${sizeClasses[size]} ${colorClasses[variant]}`}
+      >
         <span>RUST</span>
-        <span className="text-[#9e472a] font-normal mx-1">&amp;</span>
+        <span className="text-[#9e472a] font-light mx-1">&amp;</span>
         <span>REVIVE</span>
       </div>
       {showTagline && (
-        <span className="text-[9px] uppercase tracking-[0.3em] text-[#9c9689] font-mono-meta mt-1">
+        <span className="text-[9px] uppercase tracking-[0.25em] text-[#9c9689] font-mono-meta mt-1 whitespace-nowrap">
           Dhaka / Est. 2026
         </span>
       )}

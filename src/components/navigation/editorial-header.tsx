@@ -27,7 +27,7 @@ export function EditorialHeader() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
+      if (window.scrollY > 15) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
@@ -49,20 +49,20 @@ export function EditorialHeader() {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 w-full z-50 bg-[#fbf9f5] transition-all duration-300 ${
+        className={`fixed top-0 left-0 w-full z-50 bg-[#fbf9f5] border-b transition-all duration-300 ${
           isScrolled
-            ? "py-4 border-b border-[#ded7c8] bg-[#fbf9f5]/98 backdrop-blur-sm"
-            : "py-5 md:py-6 border-b border-[#e8e2d5]"
+            ? "py-3 sm:py-3.5 md:py-4 border-[#ded7c8] bg-[#fbf9f5]/98 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.03)]"
+            : "py-4 sm:py-5 md:py-6 border-[#e8e2d5]"
         }`}
       >
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between">
-          {/* LEFT: Logo */}
-          <div className="flex-shrink-0">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-3 sm:gap-6">
+          {/* LEFT: Official Logo */}
+          <div className="flex-shrink-0 flex items-center">
             <Logo variant="light" size="md" />
           </div>
 
-          {/* CENTER: Minimal Navigation */}
-          <nav className="hidden lg:flex items-center space-x-7 xl:space-x-8">
+          {/* CENTER: Desktop Horizontal Navigation */}
+          <nav className="hidden lg:flex items-center space-x-7 xl:space-x-8 whitespace-nowrap">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 item.href === "/"
@@ -85,40 +85,44 @@ export function EditorialHeader() {
             })}
           </nav>
 
-          {/* RIGHT: Search, Account, Bag */}
-          <div className="flex items-center space-x-5 text-[#141312]">
+          {/* RIGHT: Compact Utility Controls */}
+          <div className="flex items-center space-x-3.5 sm:space-x-5 text-[#141312] whitespace-nowrap flex-shrink-0">
+            {/* Search Trigger */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-1 text-[#2e2c2a] hover:text-[#9e472a] transition-colors cursor-pointer"
+              className="p-1 text-[#2e2c2a] hover:text-[#9e472a] transition-colors cursor-pointer flex items-center"
               aria-label="Search"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-[18px] h-[18px] sm:w-4 sm:h-4" />
             </button>
 
+            {/* Account (Hidden on small mobile) */}
             <Link
               href="/account"
-              className="hidden sm:block p-1 text-[#2e2c2a] hover:text-[#9e472a] transition-colors"
+              className="hidden sm:flex items-center p-1 text-[#2e2c2a] hover:text-[#9e472a] transition-colors"
               aria-label="Account"
             >
               <User className="w-4 h-4" />
             </Link>
 
+            {/* Shopping Bag */}
             <Link
               href="/cart"
-              className="flex items-center space-x-1.5 p-1 text-[#141312] hover:text-[#9e472a] transition-colors"
+              className="flex items-center space-x-1 p-1 text-[#141312] hover:text-[#9e472a] transition-colors group"
               aria-label="Shopping Bag"
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span className="text-[11px] font-mono-meta uppercase tracking-wider">
-                BAG <span className="text-[#9e472a]">(0)</span>
+              <ShoppingBag className="w-[18px] h-[18px] sm:w-4 sm:h-4" />
+              <span className="text-[11px] font-mono-meta uppercase tracking-wider font-semibold whitespace-nowrap">
+                <span className="hidden md:inline">BAG </span>
+                <span className="text-[#9e472a]">(0)</span>
               </span>
             </Link>
 
-            {/* Mobile Hamburger */}
+            {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-1 text-[#141312] hover:text-[#9e472a] transition-colors cursor-pointer"
-              aria-label="Open Menu"
+              className="lg:hidden p-1 text-[#141312] hover:text-[#9e472a] transition-colors cursor-pointer flex items-center"
+              aria-label="Open Navigation Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -149,29 +153,43 @@ export function EditorialHeader() {
         )}
       </header>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
+          {/* Backdrop */}
           <div
             onClick={() => setMobileMenuOpen(false)}
-            className="fixed inset-0 bg-[#0e0d0c]/60 backdrop-blur-xs"
+            className="fixed inset-0 bg-[#0e0d0c]/60 backdrop-blur-xs transition-opacity duration-300"
           />
 
-          <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-[#fbf9f5] border-l border-[#ded7c8] p-6 flex flex-col justify-between shadow-xl z-10 animate-in slide-in-from-right duration-300">
+          {/* Drawer Panel */}
+          <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-[#fbf9f5] border-l border-[#ded7c8] p-6 flex flex-col justify-between shadow-2xl z-10 animate-in slide-in-from-right duration-300">
             <div className="space-y-6">
+              {/* Header inside drawer */}
               <div className="flex items-center justify-between pb-4 border-b border-[#ded7c8]">
                 <Logo variant="light" size="sm" />
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 text-[#5c574e] hover:text-[#141312] cursor-pointer"
+                  className="p-1 text-[#5c574e] hover:text-[#141312] transition-colors cursor-pointer"
                   aria-label="Close menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
+              {/* Search field */}
+              <div className="relative flex items-center border-b border-[#ded7c8] pb-2">
+                <Search className="w-4 h-4 text-[#8c8577] mr-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search collections..."
+                  className="w-full bg-transparent text-xs text-[#141312] placeholder-[#8c8577] font-sans-ui focus:outline-none"
+                />
+              </div>
+
+              {/* Navigation links */}
               <nav className="space-y-3 pt-2">
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {NAV_ITEMS.map((item) => (
                     <li key={item.label}>
                       <Link
@@ -187,6 +205,7 @@ export function EditorialHeader() {
               </nav>
             </div>
 
+            {/* Bottom links */}
             <div className="space-y-3 pt-6 border-t border-[#ded7c8] text-xs font-mono-meta text-[#5c574e]">
               <Link
                 href="/account"
@@ -196,7 +215,7 @@ export function EditorialHeader() {
                 ACCOUNT LOGIN
               </Link>
               <div className="text-[10px] uppercase tracking-widest text-[#8c8577]">
-                &copy; {new Date().getFullYear()} RUST &amp; REVIVE
+                &copy; {new Date().getFullYear()} RUST &amp; REVIVE &mdash; DHAKA
               </div>
             </div>
           </div>
