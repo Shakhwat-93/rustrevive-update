@@ -14,13 +14,13 @@ export function EverydayEssentials() {
   };
 
   return (
-    <section className="w-full py-16 md:py-24 px-4 sm:px-6 lg:px-12 bg-[#0e0d0c]">
+    <section className="w-full py-16 md:py-24 px-4 sm:px-6 lg:px-12 bg-[#fbf9f5]">
       <div className="max-w-[1600px] mx-auto space-y-8">
         <SectionHeader
           title="EVERYDAY ESSENTIALS"
           actionText="SHOP ALL"
           actionHref="/collections/all"
-          theme="dark"
+          theme="light"
         />
 
         {/* 4-Column Desktop / 2-Column Mobile Grid */}
@@ -37,7 +37,7 @@ export function EverydayEssentials() {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#141312] border border-[#9e472a] text-[#fbf9f5] px-4 py-2.5 text-xs font-mono-meta uppercase tracking-wider shadow-lg flex items-center space-x-2 animate-in fade-in duration-200">
+        <div className="fixed bottom-6 right-6 z-50 bg-[#141312] text-[#ffffff] px-4 py-2.5 text-xs font-mono-meta uppercase tracking-wider shadow-lg flex items-center space-x-2 animate-in fade-in duration-200">
           <span className="w-1.5 h-1.5 rounded-full bg-[#9e472a]" />
           <span>{toastMessage}</span>
         </div>

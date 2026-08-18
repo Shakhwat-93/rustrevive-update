@@ -54,8 +54,8 @@
   }
 
   body {
-    background-color: var(--color-bg-dark);
-    color: var(--color-text-dark-primary);
+    background-color: var(--color-bg-light);
+    color: var(--color-text-light-primary);
     font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

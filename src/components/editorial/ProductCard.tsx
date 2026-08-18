@@ -32,7 +32,7 @@ export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
       {/* Product Image Frame */}
       <Link
         href={`/products/${product.slug}`}
-        className="relative aspect-[3/4] w-full overflow-hidden bg-[#141312]"
+        className="relative aspect-[3/4] w-full overflow-hidden bg-[#f4eee3] border border-[#ded7c8] transition-colors"
       >
         <Image
           src={product.imageUrl}
@@ -40,7 +40,7 @@ export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className={`object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] ${
-            isHovered && product.hoverImageUrl ? "opacity-0" : "opacity-90"
+            isHovered && product.hoverImageUrl ? "opacity-0" : "opacity-100"
           }`}
         />
 
@@ -51,7 +51,7 @@ export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className={`object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] absolute inset-0 ${
-              isHovered ? "opacity-90" : "opacity-0"
+              isHovered ? "opacity-100" : "opacity-0"
             }`}
           />
         )}
@@ -71,7 +71,7 @@ export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
               e.stopPropagation();
               onQuickAdd(product);
             }}
-            className="hidden sm:flex absolute bottom-2.5 right-2.5 p-2 bg-[#0e0d0c]/85 hover:bg-[#9e472a] text-[#fbf9f5] items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 cursor-pointer"
+            className="hidden sm:flex absolute bottom-2.5 right-2.5 p-2 bg-[#141312] hover:bg-[#9e472a] text-[#ffffff] items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 cursor-pointer shadow-sm"
             aria-label={`Add ${product.title}`}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -82,15 +82,15 @@ export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
       {/* Minimal Product Information */}
       <div className="pt-3 space-y-1">
         <Link href={`/products/${product.slug}`}>
-          <h3 className="font-serif-editorial text-base uppercase tracking-tight text-[#fbf9f5] group-hover:text-[#9e472a] transition-colors line-clamp-1">
+          <h3 className="font-serif-editorial text-base uppercase tracking-tight text-[#141312] group-hover:text-[#9e472a] transition-colors line-clamp-1">
             {product.title}
           </h3>
         </Link>
 
         <div className="flex items-center space-x-2 text-xs font-mono-meta">
-          <span className="text-[#fbf9f5] font-medium">{formattedPrice}</span>
+          <span className="text-[#141312] font-semibold">{formattedPrice}</span>
           {formattedComparePrice && (
-            <span className="text-[#666258] line-through text-[11px]">
+            <span className="text-[#8c8577] line-through text-[11px]">
               {formattedComparePrice}
             </span>
           )}

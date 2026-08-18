@@ -14,7 +14,7 @@ function CollectionCard({ item }: { item: CollectionItem }) {
   return (
     <Link
       href={`/collections/${item.slug}`}
-      className="group relative block w-full overflow-hidden bg-[#141312]"
+      className="group relative block w-full overflow-hidden bg-[#f4eee3] border border-[#ded7c8] transition-colors"
     >
       <div
         className={`relative w-full overflow-hidden ${
@@ -30,18 +30,18 @@ function CollectionCard({ item }: { item: CollectionItem }) {
           alt={item.imageAlt}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover object-center transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] opacity-85 group-hover:opacity-95"
+          className="object-cover object-center transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] opacity-90 group-hover:opacity-100"
         />
 
-        {/* Subtle Dark Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0d0c]/85 via-transparent to-transparent" />
+        {/* Minimal Soft Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#141312]/80 via-transparent to-transparent" />
 
         {/* Minimal Bottom Category Name + Arrow */}
         <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10">
-          <h3 className="font-serif-editorial text-xl sm:text-2xl md:text-3xl uppercase tracking-tight text-[#fbf9f5] group-hover:text-[#9e472a] transition-colors">
+          <h3 className="font-serif-editorial text-xl sm:text-2xl md:text-3xl uppercase tracking-tight text-[#fbf9f5] group-hover:text-[#ffffff] transition-colors">
             {item.title}
           </h3>
-          <ArrowUpRight className="w-4 h-4 text-[#fbf9f5] transform transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[#9e472a]" />
+          <ArrowUpRight className="w-4 h-4 text-[#fbf9f5] transform transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[#ffffff]" />
         </div>
       </div>
     </Link>
@@ -56,13 +56,13 @@ export function EditorialCollectionGrid() {
   );
 
   return (
-    <section className="w-full py-16 md:py-24 px-4 sm:px-6 lg:px-12 bg-[#0e0d0c]">
+    <section className="w-full py-16 md:py-24 px-4 sm:px-6 lg:px-12 bg-[#fbf9f5]">
       <div className="max-w-[1600px] mx-auto space-y-8 md:space-y-12">
         <SectionHeader
           title="SHOP THE COLLECTION"
           actionText="VIEW ALL"
           actionHref="/collections/all"
-          theme="dark"
+          theme="light"
         />
 
         {/* Asymmetric Visual Grid */}

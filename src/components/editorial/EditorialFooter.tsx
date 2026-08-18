@@ -20,21 +20,21 @@ export function EditorialFooter() {
   ];
 
   return (
-    <footer className="w-full bg-[#0e0d0c] text-[#fbf9f5] pt-14 pb-10 px-4 sm:px-6 lg:px-12 border-t border-[#262421]">
+    <footer className="w-full bg-[#fbf9f5] text-[#141312] pt-14 pb-10 px-4 sm:px-6 lg:px-12 border-t border-[#ded7c8]">
       <div className="max-w-[1600px] mx-auto space-y-12">
         {/* Main Footer Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Column (4 Cols) */}
           <div className="md:col-span-4 space-y-3">
-            <Logo variant="dark" size="md" />
-            <p className="text-xs font-sans-ui text-[#9c9689] max-w-xs leading-relaxed">
+            <Logo variant="light" size="md" />
+            <p className="text-xs font-sans-ui text-[#5c574e] max-w-xs leading-relaxed">
               Timeless garments crafted from raw denim, heavy cotton, and vegetable-tanned leather.
             </p>
           </div>
 
           {/* SHOP COLUMN (3 Cols) */}
           <div className="md:col-span-3 space-y-3">
-            <span className="text-[11px] font-mono-meta uppercase tracking-[0.2em] text-[#fbf9f5] font-semibold block">
+            <span className="text-[11px] font-mono-meta uppercase tracking-[0.2em] text-[#141312] font-semibold block">
               SHOP
             </span>
             <ul className="space-y-2">
@@ -42,7 +42,7 @@ export function EditorialFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-xs font-sans-ui text-[#9c9689] hover:text-[#fbf9f5] transition-colors"
+                    className="text-xs font-sans-ui text-[#5c574e] hover:text-[#9e472a] transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -53,7 +53,7 @@ export function EditorialFooter() {
 
           {/* HELP COLUMN (3 Cols) */}
           <div className="md:col-span-3 space-y-3">
-            <span className="text-[11px] font-mono-meta uppercase tracking-[0.2em] text-[#fbf9f5] font-semibold block">
+            <span className="text-[11px] font-mono-meta uppercase tracking-[0.2em] text-[#141312] font-semibold block">
               HELP
             </span>
             <ul className="space-y-2">
@@ -61,7 +61,7 @@ export function EditorialFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-xs font-sans-ui text-[#9c9689] hover:text-[#fbf9f5] transition-colors"
+                    className="text-xs font-sans-ui text-[#5c574e] hover:text-[#9e472a] transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -72,10 +72,10 @@ export function EditorialFooter() {
 
           {/* CONTACT COLUMN (2 Cols) */}
           <div className="md:col-span-2 space-y-3">
-            <span className="text-[11px] font-mono-meta uppercase tracking-[0.2em] text-[#fbf9f5] font-semibold block">
+            <span className="text-[11px] font-mono-meta uppercase tracking-[0.2em] text-[#141312] font-semibold block">
               CONTACT
             </span>
-            <div className="space-y-1 text-xs font-sans-ui text-[#9c9689]">
+            <div className="space-y-1 text-xs font-sans-ui text-[#5c574e]">
               <p>Dhaka, Bangladesh</p>
               <p>support@rustrevive.store</p>
             </div>
@@ -83,7 +83,7 @@ export function EditorialFooter() {
         </div>
 
         {/* Bottom Minimal Copyright */}
-        <div className="pt-6 border-t border-[#262421] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono-meta uppercase tracking-wider text-[#666258]">
+        <div className="pt-6 border-t border-[#ded7c8] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono-meta uppercase tracking-wider text-[#8c8577]">
           <p>&copy; {new Date().getFullYear()} Rust &amp; Revive</p>
           <p>BDT (৳)</p>
         </div>

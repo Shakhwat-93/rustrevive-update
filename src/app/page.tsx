@@ -14,7 +14,7 @@ import { EditorialFooter } from "@/components/editorial/EditorialFooter";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0e0d0c] text-[#fbf9f5] selection:bg-[#9e472a] selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#fbf9f5] text-[#141312] selection:bg-[#9e472a] selection:text-white">
       {/* Navigation Header */}
       <EditorialHeader />
 
