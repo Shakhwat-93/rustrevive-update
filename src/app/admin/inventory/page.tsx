@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Boxes } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
+import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 
 interface InventoryRow {
   id: string;
@@ -79,7 +79,7 @@ export default function AdminInventoryPage() {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => handleAdjust(item.id, -1)}
-            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer"
+            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors"
           >
             -
           </button>
@@ -88,7 +88,7 @@ export default function AdminInventoryPage() {
           </span>
           <button
             onClick={() => handleAdjust(item.id, 1)}
-            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer"
+            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors"
           >
             +
           </button>
@@ -98,23 +98,16 @@ export default function AdminInventoryPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Inventory</h1>
-          <Boxes className="w-4 h-4 text-slate-400" />
-        </div>
-        <p className="text-xs text-slate-500">
-          Track stock levels, reserve allocations, and log inventory movements.
-        </p>
-      </div>
-
+    <AdminPageLayout
+      title="Inventory"
+      subtitle="Track available vs. reserved stock levels and log inventory movements."
+    >
       <DataTable
         data={inventory}
         columns={columns}
         searchPlaceholder="Search by SKU, product name..."
         searchKey="productName"
       />
-    </div>
+    </AdminPageLayout>
   );
 }

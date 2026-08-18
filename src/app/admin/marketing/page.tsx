@@ -1,34 +1,27 @@
 "use client";
 
 import React from "react";
-import { Megaphone, Plus, Calendar } from "lucide-react";
+import { Plus, Calendar } from "lucide-react";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
+import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
+import { AdminButton } from "@/components/admin/ui/admin-button";
+import { AdminCard } from "@/components/admin/ui/admin-card";
 
 export default function AdminMarketingPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Marketing Campaigns</h1>
-            <Megaphone className="w-4 h-4 text-slate-400" />
-          </div>
-          <p className="text-xs text-slate-500">
-            Seasonal promotions, SMS alerts, and private lookbook dispatches.
-          </p>
-        </div>
-
-        <button
-          onClick={() => alert("New Campaign Modal")}
-          className="flex items-center space-x-1.5 bg-[#9e472a] hover:bg-[#b85433] text-white px-3.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+    <AdminPageLayout
+      title="Marketing Campaigns"
+      subtitle="Seasonal promotions, SMS alerts, and private lookbook dispatches."
+      actions={
+        <AdminButton
+          icon={Plus}
+          onClick={() => alert("Create campaign modal")}
         >
-          <Plus className="w-4 h-4" />
-          <span>Create Campaign</span>
-        </button>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-        <h2 className="text-sm font-semibold text-slate-900">Active Promotions</h2>
+          Create Campaign
+        </AdminButton>
+      }
+    >
+      <AdminCard title="Active Promotions">
         <div className="divide-y divide-slate-100">
           <div className="py-3 flex items-center justify-between text-xs">
             <div>
@@ -51,7 +44,7 @@ export default function AdminMarketingPage() {
             <StatusBadge status="pending" size="sm" label="SCHEDULED" />
           </div>
         </div>
-      </div>
-    </div>
+      </AdminCard>
+    </AdminPageLayout>
   );
 }

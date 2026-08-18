@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Percent, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
+import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
+import { AdminButton } from "@/components/admin/ui/admin-button";
 
 interface DiscountRow {
   id: string;
@@ -64,33 +66,21 @@ export default function AdminDiscountsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Discounts</h1>
-            <Percent className="w-4 h-4 text-slate-400" />
-          </div>
-          <p className="text-xs text-slate-500">
-            Create coupon codes, automatic cart discounts, and free shipping triggers.
-          </p>
-        </div>
-
-        <button
-          onClick={() => alert("Create Discount modal")}
-          className="flex items-center space-x-1.5 bg-[#9e472a] hover:bg-[#b85433] text-white px-3.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create Discount</span>
-        </button>
-      </div>
-
+    <AdminPageLayout
+      title="Discounts"
+      subtitle="Create coupon codes, automatic cart discounts, and free delivery thresholds."
+      actions={
+        <AdminButton icon={Plus} onClick={() => alert("Create Discount modal")}>
+          Create Discount
+        </AdminButton>
+      }
+    >
       <DataTable
         data={discounts}
         columns={columns}
         searchPlaceholder="Search discount code..."
         searchKey="code"
       />
-    </div>
+    </AdminPageLayout>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
+import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
+import { AdminButton } from "@/components/admin/ui/admin-button";
 
 interface CustomerRow {
   id: string;
@@ -63,33 +65,25 @@ export default function AdminCustomersPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Customers</h1>
-            <Users className="w-4 h-4 text-slate-400" />
-          </div>
-          <p className="text-xs text-slate-500">
-            View customer order histories, lifetime value, and profiles.
-          </p>
-        </div>
-
-        <button
-          onClick={() => alert("Exporting customer profiles to CSV...")}
-          className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-2xs"
+    <AdminPageLayout
+      title="Customers"
+      subtitle="View customer order histories, profiles, and lifetime value."
+      actions={
+        <AdminButton
+          variant="secondary"
+          icon={Download}
+          onClick={() => alert("Exporting customers...")}
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export Customers</span>
-        </button>
-      </div>
-
+          Export Customers
+        </AdminButton>
+      }
+    >
       <DataTable
         data={customers}
         columns={columns}
         searchPlaceholder="Search customer name or email..."
         searchKey="name"
       />
-    </div>
+    </AdminPageLayout>
   );
 }

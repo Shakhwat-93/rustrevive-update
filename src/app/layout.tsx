@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0e0d0c",
+  themeColor: "#fbf9f5",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -60,9 +60,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cormorantGaramond.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full bg-[#0e0d0c] text-[#fbf9f5]`}
+      className={`${cormorantGaramond.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col antialiased selection:bg-[#9e472a] selection:text-white bg-[#0e0d0c] text-[#fbf9f5]">
+      <body className="min-h-full flex flex-col font-sans bg-[#fbf9f5] text-[#141312] selection:bg-[#9e472a] selection:text-white">
         {children}
       </body>
     </html>

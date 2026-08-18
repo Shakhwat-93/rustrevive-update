@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Shield, Clock } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
+import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 
 interface AuditLogRow {
   id: string;
@@ -112,27 +113,17 @@ export default function AuditLogsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Audit Logs</h1>
-            <Shield className="w-4 h-4 text-emerald-600" />
-          </div>
-          <p className="text-xs text-slate-500">
-            Immutable audit record of all administrative actions, stock adjustments, and price changes.
-          </p>
-        </div>
-      </div>
-
-      {/* Audit DataTable */}
+    <AdminPageLayout
+      title="Audit Logs"
+      subtitle="Immutable audit trail of all staff administrative mutations and price adjustments."
+      badge={<Shield className="w-4 h-4 text-emerald-600" />}
+    >
       <DataTable
         data={logs}
         columns={columns}
         searchPlaceholder="Filter audit records..."
         searchKey="action"
       />
-    </div>
+    </AdminPageLayout>
   );
 }

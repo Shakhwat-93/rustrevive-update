@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingCart, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
+import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
+import { AdminButton } from "@/components/admin/ui/admin-button";
 
 interface OrderRow {
   id: string;
@@ -87,28 +89,19 @@ export default function AdminOrdersPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Orders</h1>
-            <ShoppingCart className="w-4 h-4 text-slate-400" />
-          </div>
-          <p className="text-xs text-slate-500">
-            Fulfill shipments, process returns, and print invoices.
-          </p>
-        </div>
-
-        <button
-          onClick={() => alert("Exporting orders to CSV...")}
-          className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-2xs"
+    <AdminPageLayout
+      title="Orders"
+      subtitle="Fulfill shipments, update tracking numbers, and process returns."
+      actions={
+        <AdminButton
+          variant="secondary"
+          icon={Download}
+          onClick={() => alert("Exporting orders...")}
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export Orders</span>
-        </button>
-      </div>
-
+          Export Orders
+        </AdminButton>
+      }
+    >
       <DataTable
         data={filteredOrders}
         columns={columns}
@@ -118,6 +111,6 @@ export default function AdminOrdersPage() {
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
       />
-    </div>
+    </AdminPageLayout>
   );
 }

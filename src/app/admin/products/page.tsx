@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Plus, Download, Upload } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
+import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
+import { AdminButton } from "@/components/admin/ui/admin-button";
 import { FEATURED_PRODUCTS } from "@/data/homepage.data";
 
 interface AdminProductRow {
@@ -39,7 +40,7 @@ export default function AdminProductsPage() {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
 
   const filterTabs = [
-    { label: "All", value: "ALL", count: products.length },
+    { label: "All Products", value: "ALL", count: products.length },
     {
       label: "Active",
       value: "ACTIVE",
@@ -134,7 +135,7 @@ export default function AdminProductsPage() {
       key: "category",
       header: "Category",
       sortable: true,
-      cell: (item) => <span className="text-slate-600">{item.category}</span>,
+      cell: (item) => <span className="text-slate-600 font-medium">{item.category}</span>,
     },
     {
       key: "price",
@@ -150,44 +151,33 @@ export default function AdminProductsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Products</h1>
-          <p className="text-xs text-slate-500">
-            Manage garment catalog, variants, pricing, and stock levels.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2.5">
-          <button
-            onClick={() => alert("Exporting product catalog to CSV...")}
-            className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-2xs"
+    <AdminPageLayout
+      title="Products"
+      subtitle="Manage garment catalog, variants, pricing, and stock levels."
+      actions={
+        <>
+          <AdminButton
+            variant="secondary"
+            icon={Download}
+            onClick={() => alert("Exporting product catalog...")}
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export</span>
-          </button>
+            Export
+          </AdminButton>
 
-          <button
-            onClick={() => alert("Product CSV Import is ready.")}
-            className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-2xs"
+          <AdminButton
+            variant="secondary"
+            icon={Upload}
+            onClick={() => alert("Import product CSV...")}
           >
-            <Upload className="w-3.5 h-3.5" />
-            <span>Import</span>
-          </button>
+            Import
+          </AdminButton>
 
-          <Link
-            href="/admin/products/new"
-            className="flex items-center space-x-1.5 bg-[#9e472a] hover:bg-[#b85433] text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Product</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* High-Performance Product DataTable */}
+          <AdminButton href="/admin/products/new" icon={Plus}>
+            Add Product
+          </AdminButton>
+        </>
+      }
+    >
       <DataTable
         data={filteredProducts}
         columns={columns}
@@ -201,6 +191,6 @@ export default function AdminProductsPage() {
         onBulkArchive={handleBulkArchive}
         onBulkDelete={handleBulkDelete}
       />
-    </div>
+    </AdminPageLayout>
   );
 }
