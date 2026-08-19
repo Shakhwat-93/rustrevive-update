@@ -5,15 +5,20 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HERO_SLIDES } from "@/data/homepage.data";
+import { HERO_SLIDES, type HeroSlide } from "@/data/homepage.data";
 
-export function CampaignHero() {
+interface CampaignHeroProps {
+  slides?: HeroSlide[];
+}
+
+export function CampaignHero({ slides }: CampaignHeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  const totalSlides = HERO_SLIDES.length;
+  const activeSlides = slides && slides.length > 0 ? slides : HERO_SLIDES;
+  const totalSlides = activeSlides.length;
 
   const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % totalSlides);
@@ -24,10 +29,10 @@ export function CampaignHero() {
   }, [totalSlides]);
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || totalSlides <= 1) return;
     const interval = setInterval(nextSlide, 7000);
     return () => clearInterval(interval);
-  }, [isPaused, nextSlide]);
+  }, [isPaused, nextSlide, totalSlides]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0]?.clientX ?? null);
@@ -46,7 +51,7 @@ export function CampaignHero() {
     setTouchEnd(null);
   };
 
-  const slide = HERO_SLIDES[currentSlide]!;
+  const slide = activeSlides[currentSlide] || activeSlides[0]!;
 
   return (
     <section
@@ -58,115 +63,102 @@ export function CampaignHero() {
       className="relative w-full h-[80vh] sm:h-[84vh] md:h-[88vh] mt-[65px] md:mt-[75px] bg-[#0e0d0c] overflow-hidden select-none group"
       aria-label="Campaign Hero"
     >
-      {/* Full-bleed Campaign Photography */}
-      <AnimatePresence mode="wait">
+      {/* Background Image Carousel with Film Grain Atmosphere */}
+      <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={slide.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, scale: 1.04 }}
+          animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.9, ease: [0.25, 1, 0.5, 1] }}
           className="absolute inset-0 z-0"
         >
-          {/* Desktop Image */}
-          <div className="hidden sm:block absolute inset-0">
-            <Image
-              src={slide.desktopImage}
-              alt={slide.imageAlt}
-              fill
-              priority={currentSlide === 0}
-              sizes="100vw"
-              className="object-cover object-[center_35%] opacity-70 contrast-105 saturate-95"
-            />
-          </div>
-
-          {/* Mobile Image */}
-          <div className="block sm:hidden absolute inset-0">
-            <Image
-              src={slide.mobileImage}
-              alt={slide.imageAlt}
-              fill
-              priority={currentSlide === 0}
-              sizes="100vw"
-              className="object-cover object-[center_30%] opacity-70 contrast-105 saturate-95"
-            />
-          </div>
-
-          {/* Minimal Dark Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0e0d0c]/90 via-[#0e0d0c]/20 to-[#0e0d0c]/40" />
+          <Image
+            src={slide.desktopImage || slide.mobileImage || "/placeholder-garment.webp"}
+            alt={slide.imageAlt || slide.title}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center brightness-[0.78] contrast-[1.08] saturate-[0.88]"
+          />
+          {/* Subtle 35mm Analog Gradient Layer */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0e0d0c]/90 via-[#0e0d0c]/30 to-transparent" />
+          <div className="absolute inset-0 bg-radial-at-c from-transparent via-transparent to-[#0e0d0c]/60" />
         </motion.div>
       </AnimatePresence>
 
-      {/* Hero Content: Focused & Minimal */}
-      <div className="relative z-10 h-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex flex-col justify-end pb-12 sm:pb-16 lg:pb-20 pointer-events-none">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`content-${slide.id}`}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-3xl space-y-4 pointer-events-auto"
-          >
-            {/* Clean Display Headline */}
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif-editorial uppercase tracking-tight leading-[0.92] text-[#fbf9f5]">
-              {slide.title}
-            </h1>
-
-            {/* Short Supporting Line */}
-            <p className="text-xs sm:text-sm font-sans-ui text-[#ece5d8]/80 max-w-md">
-              {slide.description}
-            </p>
-
-            {/* Single Primary Action */}
-            <div className="pt-2">
-              <Button
-                variant="primary"
-                size="md"
-                href={slide.primaryHref}
-                showArrow
-              >
-                {slide.primaryCTA}
-              </Button>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Minimal Numeric Slide Pagination */}
-        <div className="absolute bottom-6 right-4 sm:right-6 lg:right-12 flex items-center space-x-3 text-xs font-mono-meta pointer-events-auto">
-          {HERO_SLIDES.map((s, idx) => (
-            <button
-              key={s.id}
-              onClick={() => setCurrentSlide(idx)}
-              className={`transition-colors cursor-pointer py-1 ${
-                currentSlide === idx
-                  ? "text-[#fbf9f5] font-semibold border-b border-[#9e472a]"
-                  : "text-[#666258] hover:text-[#9c9689]"
-              }`}
-              aria-label={`Slide ${idx + 1}`}
+      {/* Foreground Hero Copy & Action Buttons */}
+      <div className="relative z-10 w-full h-full max-w-[1600px] mx-auto px-6 sm:px-10 md:px-14 flex flex-col justify-end pb-12 sm:pb-16 md:pb-20">
+        <div className="max-w-3xl space-y-4 sm:space-y-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`text-${slide.id}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+              className="space-y-2 sm:space-y-3"
             >
-              {s.slideNumber}
+              <div className="inline-block px-2.5 py-1 bg-white/10 backdrop-blur-md border border-white/20 text-[#eceae5] text-[10px] sm:text-xs font-mono-meta uppercase tracking-[0.24em]">
+                {slide.eyebrow || slide.subtitle || "Edition 2026"}
+              </div>
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-editorial font-normal tracking-tight text-[#ffffff] leading-[1.05]">
+                {slide.title}
+              </h1>
+              <p className="text-sm sm:text-base md:text-lg text-[#d8d5cf] font-light max-w-xl line-clamp-2">
+                {slide.description}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Primary Action Button */}
+          <div className="flex items-center space-x-4 pt-1">
+            <Button
+              href={slide.primaryHref || "/shop"}
+              variant="primary"
+              size="lg"
+              className="bg-[#ffffff] text-[#141312] hover:bg-[#eceae5] border-none font-medium px-8 py-3 text-xs tracking-[0.16em]"
+            >
+              {slide.primaryCTA || "EXPLORE"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Carousel Pagination & Manual Arrow Controls */}
+        <div className="flex items-center justify-between pt-8 sm:pt-10 border-t border-white/15 mt-8">
+          <div className="flex items-center space-x-2">
+            {activeSlides.map((s, idx) => (
+              <button
+                key={s.id}
+                onClick={() => setCurrentSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={`h-1 transition-all duration-300 cursor-pointer ${
+                  currentSlide === idx
+                    ? "w-8 bg-[#ffffff]"
+                    : "w-2 bg-white/40 hover:bg-white/70"
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={prevSlide}
+              aria-label="Previous slide"
+              className="w-8 h-8 rounded-full border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
             </button>
-          ))}
+            <button
+              onClick={nextSlide}
+              aria-label="Next slide"
+              className="w-8 h-8 rounded-full border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Minimal Edge Chevrons (Desktop Hover) */}
-      <button
-        onClick={prevSlide}
-        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 text-[#fbf9f5]/60 hover:text-[#fbf9f5] items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
-        aria-label="Previous slide"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-
-      <button
-        onClick={nextSlide}
-        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 text-[#fbf9f5]/60 hover:text-[#fbf9f5] items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
-        aria-label="Next slide"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
     </section>
   );
 }

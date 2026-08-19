@@ -5,17 +5,27 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { ProductCard } from "@/components/editorial/ProductCard";
 import { FEATURED_PRODUCTS, type ProductItem } from "@/data/homepage.data";
 
-export function FeaturedProducts() {
+interface FeaturedProductsProps {
+  products?: ProductItem[];
+}
+
+export function FeaturedProducts({ products }: FeaturedProductsProps) {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const filters = ["ALL", "PANTS", "JACKETS", "T-SHIRTS"];
+  const displayList = products && products.length > 0 ? products : FEATURED_PRODUCTS;
+
+  // Extract unique categories dynamically from products
+  const dynamicCategories = Array.from(
+    new Set(displayList.map((p) => (p.category || "").toUpperCase()).filter(Boolean))
+  );
+  const filters = ["ALL", ...dynamicCategories.slice(0, 4)];
 
   const filteredProducts =
     activeFilter === "ALL"
-      ? FEATURED_PRODUCTS
-      : FEATURED_PRODUCTS.filter((p) =>
-          p.category.toUpperCase().includes(activeFilter)
+      ? displayList
+      : displayList.filter((p) =>
+          (p.category || "").toUpperCase().includes(activeFilter)
         );
 
   const handleQuickAdd = (product: ProductItem) => {
@@ -29,26 +39,28 @@ export function FeaturedProducts() {
         <SectionHeader
           title="SELECTED PIECES"
           actionText="VIEW ALL"
-          actionHref="/collections/all"
+          actionHref="/shop"
           theme="light"
         />
 
         {/* Minimal Filter Tabs */}
-        <div className="flex items-center space-x-6 overflow-x-auto no-scrollbar">
-          {filters.map((f) => (
-            <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`text-xs font-mono-meta uppercase tracking-[0.18em] transition-colors cursor-pointer py-1 ${
-                activeFilter === f
-                  ? "text-[#141312] font-semibold border-b-2 border-[#9e472a]"
-                  : "text-[#8c8577] hover:text-[#141312]"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        {filters.length > 1 && (
+          <div className="flex items-center space-x-6 overflow-x-auto no-scrollbar">
+            {filters.map((f) => (
+              <button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                className={`text-xs font-mono-meta uppercase tracking-[0.18em] transition-colors cursor-pointer py-1 ${
+                  activeFilter === f
+                    ? "text-[#141312] font-semibold border-b-2 border-[#9e472a]"
+                    : "text-[#8c8577] hover:text-[#141312]"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 4-Col Desktop / 2-Col Mobile Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 pt-2">

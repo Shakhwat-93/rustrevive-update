@@ -19,6 +19,9 @@ export async function generateMetadata(props: CollectionPageProps): Promise<Meta
   };
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function CollectionPage(props: CollectionPageProps) {
   const { slug } = await props.params;
   const supabase = createPublicServerClient();

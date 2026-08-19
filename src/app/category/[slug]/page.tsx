@@ -27,6 +27,9 @@ export async function generateMetadata(props: CategoryPageProps): Promise<Metada
   };
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function CategoryPage(props: CategoryPageProps) {
   const { slug } = await props.params;
   const supabase = createPublicServerClient();
