@@ -1,16 +1,24 @@
-import type { MetadataRoute } from "next";
+import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env["NEXT_PUBLIC_SITE_URL"] || "https://rustrevive.store";
+  const baseUrl = process.env["NEXT_PUBLIC_SITE_URL"] || "https://rustrevive.store";
 
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/account/"],
+        disallow: [
+          "/admin",
+          "/admin/*",
+          "/account",
+          "/account/*",
+          "/checkout",
+          "/order-confirmation/*",
+          "/api/*",
+        ],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

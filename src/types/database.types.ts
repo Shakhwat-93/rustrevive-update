@@ -32,6 +32,7 @@ export type OrderStatus =
   | "RETURNED"
   | "REFUNDED";
 export type PaymentStatus =
+  | "INITIATED"
   | "PENDING"
   | "AUTHORIZED"
   | "PAID"
@@ -64,10 +65,421 @@ export type ReturnStatus =
   | "RECEIVED"
   | "COMPLETED";
 export type NotificationChannel = "IN_APP" | "EMAIL" | "SMS" | "WHATSAPP";
+export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT" | "FREE_SHIPPING";
+export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED" | "HIDDEN";
+export type CampaignStatus = "DRAFT" | "SCHEDULED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type CampaignType = "PROMOTION" | "PRODUCT_CAMPAIGN" | "COLLECTION_CAMPAIGN" | "EMAIL" | "WHATSAPP" | "SMS";
+export type AnalyticsEventType =
+  | "PAGE_VIEW"
+  | "PRODUCT_VIEW"
+  | "ADD_TO_CART"
+  | "REMOVE_FROM_CART"
+  | "BEGIN_CHECKOUT"
+  | "PURCHASE"
+  | "WISHLIST_ADD"
+  | "SEARCH";
 
 export interface Database {
   public: {
     Tables: {
+      payment_transactions: {
+        Row: {
+          id: string;
+          order_id: string;
+          provider: string;
+          provider_transaction_id: string | null;
+          amount: number;
+          currency: string;
+          status: PaymentStatus;
+          payment_method: string;
+          gateway_response_metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          provider: string;
+          provider_transaction_id?: string | null;
+          amount: number;
+          currency?: string;
+          status?: PaymentStatus;
+          payment_method?: string;
+          gateway_response_metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          provider?: string;
+          provider_transaction_id?: string | null;
+          amount?: number;
+          currency?: string;
+          status?: PaymentStatus;
+          payment_method?: string;
+          gateway_response_metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      refunds: {
+        Row: {
+          id: string;
+          payment_transaction_id: string;
+          order_id: string;
+          amount: number;
+          reason: string;
+          status: string;
+          provider_refund_id: string | null;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          payment_transaction_id: string;
+          order_id: string;
+          amount: number;
+          reason: string;
+          status?: string;
+          provider_refund_id?: string | null;
+          created_by?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          payment_transaction_id?: string;
+          order_id?: string;
+          amount?: number;
+          reason?: string;
+          status?: string;
+          provider_refund_id?: string | null;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "refunds_payment_transaction_id_fkey";
+            columns: ["payment_transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "payment_transactions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "refunds_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      discounts: {
+        Row: {
+          id: string;
+          code: string;
+          name: string;
+          type: DiscountType;
+          value: number;
+          minimum_order_amount: number;
+          maximum_discount_amount: number | null;
+          usage_limit: number | null;
+          usage_count: number;
+          per_customer_limit: number;
+          starts_at: string | null;
+          ends_at: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          name: string;
+          type: DiscountType;
+          value: number;
+          minimum_order_amount?: number;
+          maximum_discount_amount?: number | null;
+          usage_limit?: number | null;
+          usage_count?: number;
+          per_customer_limit?: number;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          name?: string;
+          type?: DiscountType;
+          value?: number;
+          minimum_order_amount?: number;
+          maximum_discount_amount?: number | null;
+          usage_limit?: number | null;
+          usage_count?: number;
+          per_customer_limit?: number;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      discount_usages: {
+        Row: {
+          id: string;
+          discount_id: string;
+          customer_id: string | null;
+          order_id: string;
+          discount_amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          discount_id: string;
+          customer_id?: string | null;
+          order_id: string;
+          discount_amount: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          discount_id?: string;
+          customer_id?: string | null;
+          order_id?: string;
+          discount_amount?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "discount_usages_discount_id_fkey";
+            columns: ["discount_id"];
+            isOneToOne: false;
+            referencedRelation: "discounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discount_usages_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      wishlist_items: {
+        Row: {
+          id: string;
+          customer_id: string;
+          product_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          product_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          product_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_items_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "wishlist_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      product_reviews: {
+        Row: {
+          id: string;
+          product_id: string;
+          variant_id: string | null;
+          customer_id: string | null;
+          customer_name: string;
+          order_id: string | null;
+          rating: number;
+          title: string | null;
+          content: string;
+          status: ReviewStatus;
+          is_verified_purchase: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          variant_id?: string | null;
+          customer_id?: string | null;
+          customer_name: string;
+          order_id?: string | null;
+          rating: number;
+          title?: string | null;
+          content: string;
+          status?: ReviewStatus;
+          is_verified_purchase?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          variant_id?: string | null;
+          customer_id?: string | null;
+          customer_name?: string;
+          order_id?: string | null;
+          rating?: number;
+          title?: string | null;
+          content?: string;
+          status?: ReviewStatus;
+          is_verified_purchase?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_reviews_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      customer_segments: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          description: string | null;
+          rules: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          slug: string;
+          description?: string | null;
+          rules?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          slug?: string;
+          description?: string | null;
+          rules?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      marketing_campaigns: {
+        Row: {
+          id: string;
+          name: string;
+          type: CampaignType;
+          status: CampaignStatus;
+          target_type: string;
+          target_id: string | null;
+          starts_at: string | null;
+          ends_at: string | null;
+          budget: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          type?: CampaignType;
+          status?: CampaignStatus;
+          target_type?: string;
+          target_id?: string | null;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          budget?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          type?: CampaignType;
+          status?: CampaignStatus;
+          target_type?: string;
+          target_id?: string | null;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          budget?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      analytics_events: {
+        Row: {
+          id: string;
+          event_type: AnalyticsEventType;
+          session_id: string | null;
+          user_id: string | null;
+          resource_type: string | null;
+          resource_id: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_type: AnalyticsEventType;
+          session_id?: string | null;
+          user_id?: string | null;
+          resource_type?: string | null;
+          resource_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_type?: AnalyticsEventType;
+          session_id?: string | null;
+          user_id?: string | null;
+          resource_type?: string | null;
+          resource_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       courier_providers: {
         Row: {
           id: string;
@@ -1082,6 +1494,11 @@ export interface Database {
       delivery_status: DeliveryStatus;
       return_status: ReturnStatus;
       notification_channel: NotificationChannel;
+      discount_type: DiscountType;
+      review_status: ReviewStatus;
+      campaign_status: CampaignStatus;
+      campaign_type: CampaignType;
+      analytics_event_type: AnalyticsEventType;
     };
   };
 }

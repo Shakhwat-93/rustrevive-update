@@ -39,16 +39,16 @@ async function executeSql(sql) {
 
 async function runMigrations() {
   console.log("==================================================");
-  console.log("RUST & REVIVE — DATABASE MIGRATION RUNNER (Phase 7)");
+  console.log("RUST & REVIVE — DATABASE MIGRATION RUNNER (Phase 8)");
   console.log("==================================================");
 
-  const migrationFile = "supabase/migrations/20260819_003_fulfillment_notifications_schema.sql";
+  const migrationFile = "supabase/migrations/20260819_004_phase8_commerce_expansion.sql";
   console.log(`Applying migration: ${migrationFile}...`);
   const sql = fs.readFileSync(migrationFile, "utf8");
 
   try {
     await executeSql(sql);
-    console.log("✅ Phase 7 Fulfillment Migration applied successfully!");
+    console.log("✅ Phase 8 Commerce Expansion Migration applied successfully!");
 
     console.log("Notifying PostgREST to reload schema cache...");
     await executeSql("NOTIFY pgrst, 'reload schema';");
