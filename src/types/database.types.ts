@@ -1,6 +1,6 @@
 /**
  * Supabase PostgreSQL Database Type Definitions
- * Exact mapping to 3NF Normalized Schema in supabase/migrations/20260819_001_commerce_core_schema.sql
+ * Exact mapping to 3NF Normalized Schema in supabase/migrations/
  */
 
 export type Json =
@@ -20,6 +20,32 @@ export type InventoryMovementType =
   | "MANUAL_ADJUSTMENT"
   | "DAMAGE";
 export type CMSStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "READY_TO_SHIP"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "RETURN_REQUESTED"
+  | "RETURNED"
+  | "REFUNDED";
+export type PaymentStatus =
+  | "PENDING"
+  | "AUTHORIZED"
+  | "PAID"
+  | "FAILED"
+  | "REFUNDED"
+  | "PARTIALLY_REFUNDED"
+  | "COD_PENDING"
+  | "COD_COLLECTED";
+export type FulfillmentStatus =
+  | "UNFULFILLED"
+  | "PARTIALLY_FULFILLED"
+  | "FULFILLED"
+  | "RETURNED"
+  | "CANCELLED";
 
 export interface Database {
   public: {
@@ -346,7 +372,22 @@ export interface Database {
           is_primary?: boolean;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "product_media_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_media_media_id_fkey";
+            columns: ["media_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       inventory: {
         Row: {
@@ -376,7 +417,22 @@ export interface Database {
           low_stock_threshold?: number;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "inventory_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "inventory_variant_id_fkey";
+            columns: ["variant_id"];
+            isOneToOne: false;
+            referencedRelation: "product_variants";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       inventory_movements: {
         Row: {
@@ -416,6 +472,322 @@ export interface Database {
           created_at?: string;
         };
         Relationships: [];
+      };
+      customers: {
+        Row: {
+          id: string;
+          auth_user_id: string | null;
+          name: string;
+          phone: string;
+          email: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          auth_user_id?: string | null;
+          name: string;
+          phone: string;
+          email?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          auth_user_id?: string | null;
+          name?: string;
+          phone?: string;
+          email?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      customer_addresses: {
+        Row: {
+          id: string;
+          customer_id: string;
+          full_name: string;
+          phone: string;
+          address_line_1: string;
+          address_line_2: string | null;
+          city: string;
+          area: string | null;
+          postal_code: string | null;
+          country: string;
+          is_default: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          full_name: string;
+          phone: string;
+          address_line_1: string;
+          address_line_2?: string | null;
+          city: string;
+          area?: string | null;
+          postal_code?: string | null;
+          country?: string;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          full_name?: string;
+          phone?: string;
+          address_line_1?: string;
+          address_line_2?: string | null;
+          city?: string;
+          area?: string | null;
+          postal_code?: string | null;
+          country?: string;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_addresses_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      shipping_methods: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          price: number;
+          estimated_days: string;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          price: number;
+          estimated_days: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          price?: number;
+          estimated_days?: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      orders: {
+        Row: {
+          id: string;
+          order_number: string;
+          customer_id: string | null;
+          status: OrderStatus;
+          payment_status: PaymentStatus;
+          fulfillment_status: FulfillmentStatus;
+          payment_method: string;
+          currency: string;
+          subtotal: number;
+          discount_total: number;
+          shipping_total: number;
+          tax_total: number;
+          grand_total: number;
+          customer_name: string;
+          customer_phone: string;
+          customer_email: string | null;
+          shipping_address_snapshot: Json;
+          billing_address_snapshot: Json | null;
+          notes: string | null;
+          customer_notes: string | null;
+          idempotency_key: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_number?: string;
+          customer_id?: string | null;
+          status?: OrderStatus;
+          payment_status?: PaymentStatus;
+          fulfillment_status?: FulfillmentStatus;
+          payment_method?: string;
+          currency?: string;
+          subtotal: number;
+          discount_total?: number;
+          shipping_total?: number;
+          tax_total?: number;
+          grand_total: number;
+          customer_name: string;
+          customer_phone: string;
+          customer_email?: string | null;
+          shipping_address_snapshot: Json;
+          billing_address_snapshot?: Json | null;
+          notes?: string | null;
+          customer_notes?: string | null;
+          idempotency_key?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_number?: string;
+          customer_id?: string | null;
+          status?: OrderStatus;
+          payment_status?: PaymentStatus;
+          fulfillment_status?: FulfillmentStatus;
+          payment_method?: string;
+          currency?: string;
+          subtotal?: number;
+          discount_total?: number;
+          shipping_total?: number;
+          tax_total?: number;
+          grand_total?: number;
+          customer_name?: string;
+          customer_phone?: string;
+          customer_email?: string | null;
+          shipping_address_snapshot?: Json;
+          billing_address_snapshot?: Json | null;
+          notes?: string | null;
+          customer_notes?: string | null;
+          idempotency_key?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      order_items: {
+        Row: {
+          id: string;
+          order_id: string;
+          product_id: string | null;
+          variant_id: string | null;
+          product_title_snapshot: string;
+          variant_title_snapshot: string | null;
+          sku_snapshot: string;
+          image_url_snapshot: string | null;
+          unit_price: number;
+          quantity: number;
+          line_total: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          product_id?: string | null;
+          variant_id?: string | null;
+          product_title_snapshot: string;
+          variant_title_snapshot?: string | null;
+          sku_snapshot: string;
+          image_url_snapshot?: string | null;
+          unit_price: number;
+          quantity: number;
+          line_total: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          product_id?: string | null;
+          variant_id?: string | null;
+          product_title_snapshot?: string;
+          variant_title_snapshot?: string | null;
+          sku_snapshot?: string;
+          image_url_snapshot?: string | null;
+          unit_price?: number;
+          quantity?: number;
+          line_total?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey";
+            columns: ["variant_id"];
+            isOneToOne: false;
+            referencedRelation: "product_variants";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      order_events: {
+        Row: {
+          id: string;
+          order_id: string;
+          event_type: string;
+          old_status: string | null;
+          new_status: string | null;
+          message: string;
+          created_by: string;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          event_type: string;
+          old_status?: string | null;
+          new_status?: string | null;
+          message: string;
+          created_by?: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          event_type?: string;
+          old_status?: string | null;
+          new_status?: string | null;
+          message?: string;
+          created_by?: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "order_events_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       homepage_cms: {
         Row: {
@@ -488,12 +860,18 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      generate_order_number: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
     };
     Enums: {
       product_status: ProductStatus;
       inventory_movement_type: InventoryMovementType;
       cms_status: CMSStatus;
+      order_status: OrderStatus;
+      payment_status: PaymentStatus;
+      fulfillment_status: FulfillmentStatus;
     };
   };
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { useCart } from "@/context/cart-context";
 
 const NAV_ITEMS = [
   { label: "HOME", href: "/" },
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
 
 export function EditorialHeader() {
   const pathname = usePathname();
+  const { openCart, itemCount } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -106,17 +108,17 @@ export function EditorialHeader() {
             </Link>
 
             {/* Shopping Bag */}
-            <Link
-              href="/cart"
-              className="flex items-center space-x-1 p-1 text-[#141312] hover:text-[#9e472a] transition-colors group"
+            <button
+              onClick={openCart}
+              className="flex items-center space-x-1 p-1 text-[#141312] hover:text-[#9e472a] transition-colors group cursor-pointer"
               aria-label="Shopping Bag"
             >
               <ShoppingBag className="w-[18px] h-[18px] sm:w-4 sm:h-4" />
               <span className="text-[11px] font-mono-meta uppercase tracking-wider font-semibold whitespace-nowrap">
                 <span className="hidden md:inline">BAG </span>
-                <span className="text-[#9e472a]">(0)</span>
+                <span className="text-[#9e472a]">({itemCount})</span>
               </span>
-            </Link>
+            </button>
 
             {/* Mobile Hamburger Toggle */}
             <button

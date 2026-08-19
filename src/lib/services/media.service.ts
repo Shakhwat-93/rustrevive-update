@@ -120,7 +120,6 @@ export class MediaService {
 
     if (prodMedia && prodMedia.length > 0) {
       for (const item of prodMedia) {
-        // @ts-expect-error join type
         const title = item.products?.title || item.product_id;
         references.push(`Product: ${title}`);
       }

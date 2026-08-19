@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 
 // Read environment
 const envFile = fs.readFileSync(".env.local", "utf8");
@@ -40,30 +39,28 @@ async function executeSql(sql) {
 
 async function runMigrations() {
   console.log("==================================================");
-  console.log("RUST & REVIVE — DATABASE MIGRATION RUNNER");
+  console.log("RUST & REVIVE — DATABASE MIGRATION RUNNER (Phase 6)");
   console.log("==================================================");
 
-  const migrationFile = "supabase/migrations/20260819_001_commerce_core_schema.sql";
+  const migrationFile = "supabase/migrations/20260819_002_orders_checkout_schema.sql";
   console.log(`Applying migration: ${migrationFile}...`);
   const sql = fs.readFileSync(migrationFile, "utf8");
 
   try {
     await executeSql(sql);
-    console.log("✅ Migration applied successfully!");
+    console.log("✅ Phase 6 Orders Migration applied successfully!");
 
-    // Reload PostgREST schema cache so PostgREST recognizes newly created tables immediately
     console.log("Notifying PostgREST to reload schema cache...");
     await executeSql("NOTIFY pgrst, 'reload schema';");
     console.log("✅ PostgREST schema cache reloaded!");
 
-    // Verify created tables
     const tables = await executeSql(`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public' 
       ORDER BY table_name;
     `);
-    console.log("Public Tables in Supabase PostgreSQL:");
+    console.log("All Public Tables in Supabase PostgreSQL:");
     console.log(tables.map((t) => `  - ${t.table_name}`).join("\n"));
   } catch (err) {
     console.error("❌ Migration error:", err.message);
