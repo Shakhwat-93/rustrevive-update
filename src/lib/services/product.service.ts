@@ -162,22 +162,46 @@ export class ProductService {
   public static async createProduct(input: CreateProductInput) {
     const supabase = createAdminClient();
 
-    const slug =
+    let baseSlug = (
       input.slug ||
       input.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
+        .replace(/^-|-$/g, "")
+    ).trim();
+
+    if (!baseSlug) {
+      baseSlug = `product-${Date.now().toString(36)}`;
+    }
+
+    // Ensure unique slug automatically (appends -1, -2, etc. if title/slug already exists)
+    let slug = baseSlug;
+    let slugCounter = 1;
+
+    while (true) {
+      const { data: existingSlugRow } = await supabase
+        .from("products")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (!existingSlugRow) {
+        break; // Unique slug confirmed
+      }
+
+      slug = `${baseSlug}-${slugCounter}`;
+      slugCounter++;
+    }
 
     // 1. Verify unique SKU
     const { data: existingSku } = await supabase
       .from("products")
       .select("id")
       .eq("sku", input.sku)
-      .single();
+      .maybeSingle();
 
     if (existingSku) {
-      throw new ValidationError(`Product SKU '${input.sku}' already exists.`, { field: "sku" });
+      throw new ValidationError(`Product SKU '${input.sku}' already exists. Please choose a different SKU.`, { field: "sku" });
     }
 
     // 2. Insert main Product row
