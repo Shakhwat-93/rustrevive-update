@@ -26,13 +26,13 @@ export const ADMIN_NAV_ITEMS = [
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: "3" },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Inventory", href: "/admin/inventory", icon: Boxes },
+  { label: "Fulfillment", href: "/admin/fulfillment", icon: Megaphone },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Content", href: "/admin/content/homepage", icon: LayoutTemplate },
-  { label: "Marketing", href: "/admin/marketing", icon: Megaphone },
   { label: "Discounts", href: "/admin/discounts", icon: Percent },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Media", href: "/admin/media", icon: ImageIcon },
-  { label: "Settings", href: "/admin/settings/audit-logs", icon: Settings },
+  { label: "Shipping Rates", href: "/admin/settings/shipping", icon: Settings },
 ];
 
 interface AdminSidebarProps {

@@ -367,43 +367,55 @@ export default function CheckoutPage() {
             {/* Step 3: Shipping Method Selection */}
             <div className="bg-white border border-[#e8e2d5] p-6 shadow-sm">
               <h2 className="text-xs font-mono uppercase tracking-[0.2em] font-semibold text-[#141312] border-b border-[#f0ebe1] pb-3 mb-4 flex items-center justify-between">
-                <span>3. Delivery Method</span>
+                <span>3. Shipping Method</span>
                 <Truck className="w-4 h-4 text-[#9e472a]" />
               </h2>
 
-              <div className="space-y-3">
+              <div className="rounded-xl border border-slate-200 divide-y divide-slate-200 overflow-hidden bg-white">
                 {shippingMethods.map((method) => {
                   const isSelected = selectedShippingId === method.id;
                   return (
-                    <label
+                    <div
                       key={method.id}
-                      className={`flex items-start justify-between p-4 border cursor-pointer transition-all ${
+                      onClick={() => setSelectedShippingId(method.id)}
+                      className={`p-4 flex items-start justify-between cursor-pointer transition-all ${
                         isSelected
-                          ? "border-[#9e472a] bg-[#faf6f0]"
-                          : "border-[#e8e2d5] hover:border-[#b8b09f] bg-[#fcfbf9]"
+                          ? "bg-blue-50/40 border-2 -m-[1px] border-blue-600 rounded-lg relative z-10"
+                          : "hover:bg-slate-50/80"
                       }`}
                     >
-                      <div className="flex items-start space-x-3">
-                        <input
-                          type="radio"
-                          name="shipping_method"
-                          checked={isSelected}
-                          onChange={() => setSelectedShippingId(method.id)}
-                          className="mt-1 accent-[#9e472a]"
-                        />
+                      <div className="flex items-start space-x-3.5">
+                        {/* Custom Blue Radio Dot */}
+                        <div className="pt-0.5">
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                              isSelected
+                                ? "border-blue-600 bg-white"
+                                : "border-slate-300 bg-white"
+                            }`}
+                          >
+                            {isSelected && (
+                              <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                            )}
+                          </div>
+                        </div>
+
                         <div>
-                          <p className="text-xs font-mono font-semibold text-[#141312]">
+                          <p className="text-xs sm:text-sm font-semibold text-slate-900">
                             {method.name}
                           </p>
-                          <p className="text-[11px] text-[#6E6B63] font-sans mt-0.5">
-                            {method.description} ({method.estimated_days})
-                          </p>
+                          {method.description && (
+                            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">
+                              {method.description}
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <span className="text-xs font-mono font-semibold text-[#9e472a]">
-                        ৳{method.price}
+
+                      <span className="text-xs sm:text-sm font-mono font-bold text-slate-900 ml-4 shrink-0">
+                        ৳{method.price.toFixed(2)}
                       </span>
-                    </label>
+                    </div>
                   );
                 })}
               </div>
