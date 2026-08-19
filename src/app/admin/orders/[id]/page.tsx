@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, use } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   MapPin,
   User,
@@ -9,13 +10,16 @@ import {
   Mail,
   Send,
   Loader2,
+  Printer,
+  Truck,
+  Package,
 } from "lucide-react";
 import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminCard } from "@/components/admin/ui/admin-card";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
-import type { OrderStatus, PaymentStatus } from "@/types/database.types";
+import type { OrderStatus, PaymentStatus, DeliveryStatus } from "@/types/database.types";
 
 interface OrderDetail {
   id: string;
@@ -43,6 +47,13 @@ interface OrderDetail {
     area?: string;
     postalCode?: string;
   };
+  fulfillments?: {
+    id: string;
+    tracking_number: string;
+    status: DeliveryStatus;
+    courier_notes: string | null;
+    created_at: string;
+  }[];
   order_items: {
     id: string;
     product_title_snapshot: string;
@@ -76,6 +87,8 @@ export default function AdminOrderDetailPage(props: PageProps) {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [mutating, setMutating] = useState(false);
+  const [creatingShipment, setCreatingShipment] = useState(false);
+  const [selectedCourier, setSelectedCourier] = useState("CUSTOM");
   const [noteText, setNoteText] = useState("");
   const [addingNote, setAddingNote] = useState(false);
 
@@ -128,6 +141,33 @@ export default function AdminOrderDetailPage(props: PageProps) {
     }
   };
 
+  const handleCreateShipment = async () => {
+    try {
+      setCreatingShipment(true);
+      const res = await fetch("/api/admin/fulfillment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          courierCode: selectedCourier,
+          actorName: "Admin Staff",
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json?.error?.message || "Failed to create shipment.");
+      } else {
+        alert(`Shipment created! Tracking: ${json.data.tracking_number}`);
+        await fetchOrder();
+      }
+    } catch {
+      alert("Error creating shipment.");
+    } finally {
+      setCreatingShipment(false);
+    }
+  };
+
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteText.trim()) return;
@@ -166,6 +206,7 @@ export default function AdminOrderDetailPage(props: PageProps) {
   }
 
   const allowedTransitions = VALID_STATUS_TRANSITIONS[order.status] || [];
+  const latestFulfillment = order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments[0] : null;
 
   return (
     <AdminPageLayout
@@ -173,6 +214,15 @@ export default function AdminOrderDetailPage(props: PageProps) {
       subtitle={`Placed on ${new Date(order.created_at).toLocaleString()} • Customer: ${order.customer_name}`}
       actions={
         <div className="flex items-center space-x-2">
+          {/* Invoice Print Link */}
+          <Link
+            href={`/admin/orders/${orderId}/invoice`}
+            className="px-3 py-1.5 border border-slate-200 text-slate-700 text-xs font-mono rounded hover:bg-slate-50 flex items-center space-x-1.5 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Print Invoice</span>
+          </Link>
+
           {allowedTransitions.map((targetStatus) => {
             const isDanger = targetStatus === "CANCELLED";
             return (
@@ -280,30 +330,64 @@ export default function AdminOrderDetailPage(props: PageProps) {
           </AdminCard>
         </div>
 
-        {/* RIGHT COLUMN: Customer, Status & Internal Notes (4 Cols) */}
+        {/* RIGHT COLUMN: Fulfillment Actions, Customer & Notes (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Order Status Overview */}
-          <AdminCard title="Status & Payment">
-            <div className="space-y-3 text-xs font-mono">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Order Lifecycle:</span>
-                <StatusBadge status={order.status} />
+          {/* Fulfillment Action / Status Card */}
+          <AdminCard title="Fulfillment & Logistics">
+            {latestFulfillment ? (
+              <div className="space-y-3 text-xs font-mono">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Logistics Status:</span>
+                  <StatusBadge status={latestFulfillment.status} />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Tracking Code:</span>
+                  <span className="font-bold text-slate-900">{latestFulfillment.tracking_number}</span>
+                </div>
+                {latestFulfillment.courier_notes && (
+                  <div className="p-2 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600">
+                    {latestFulfillment.courier_notes}
+                  </div>
+                )}
+                <div className="pt-2">
+                  <Link
+                    href={`/track-order`}
+                    target="_blank"
+                    className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-mono font-semibold flex items-center justify-center space-x-1.5 rounded transition-colors"
+                  >
+                    <Truck className="w-3.5 h-3.5" />
+                    <span>Open Public Tracker</span>
+                  </Link>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Payment:</span>
-                <span className="font-semibold text-slate-800">
-                  {order.payment_status === "COD_PENDING" ? "COD (Uncollected)" : order.payment_status}
-                </span>
+            ) : (
+              <div className="space-y-3 text-xs font-mono">
+                <p className="text-slate-600">
+                  Select courier partner to create consignment and generate tracking reference:
+                </p>
+
+                <select
+                  value={selectedCourier}
+                  onChange={(e) => setSelectedCourier(e.target.value)}
+                  className="w-full p-2 border border-slate-200 rounded text-xs font-mono outline-none"
+                >
+                  <option value="CUSTOM">Custom In-House Logistics</option>
+                  <option value="STEADFAST">Steadfast Courier</option>
+                  <option value="PATHAO">Pathao Logistics</option>
+                  <option value="REDX">RedX Express</option>
+                </select>
+
+                <AdminButton
+                  variant="primary"
+                  icon={Package}
+                  isLoading={creatingShipment}
+                  onClick={handleCreateShipment}
+                  className="w-full"
+                >
+                  Create Shipment
+                </AdminButton>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Fulfillment:</span>
-                <span className="font-semibold text-slate-800">{order.fulfillment_status}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Method:</span>
-                <span className="text-slate-800">{order.payment_method}</span>
-              </div>
-            </div>
+            )}
           </AdminCard>
 
           {/* Customer & Destination */}
@@ -343,13 +427,6 @@ export default function AdminOrderDetailPage(props: PageProps) {
                   {order.shipping_address_snapshot?.postalCode ? ` - ${order.shipping_address_snapshot.postalCode}` : ""}
                 </p>
               </div>
-
-              {order.customer_notes && (
-                <div className="border-t border-slate-100 pt-3">
-                  <p className="font-semibold text-slate-800">Customer Note:</p>
-                  <p className="italic text-slate-600 mt-0.5">{order.customer_notes}</p>
-                </div>
-              )}
             </div>
           </AdminCard>
 

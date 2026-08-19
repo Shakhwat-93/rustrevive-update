@@ -46,10 +46,217 @@ export type FulfillmentStatus =
   | "FULFILLED"
   | "RETURNED"
   | "CANCELLED";
+export type DeliveryStatus =
+  | "CREATED"
+  | "PICKED_UP"
+  | "IN_TRANSIT"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "DELIVERY_FAILED"
+  | "CANCELLED"
+  | "RETURNED";
+export type ReturnStatus =
+  | "REQUESTED"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "PICKUP_SCHEDULED"
+  | "RECEIVED"
+  | "COMPLETED";
+export type NotificationChannel = "IN_APP" | "EMAIL" | "SMS" | "WHATSAPP";
 
 export interface Database {
   public: {
     Tables: {
+      courier_providers: {
+        Row: {
+          id: string;
+          name: string;
+          code: string;
+          is_active: boolean;
+          is_default: boolean;
+          configuration: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          code: string;
+          is_active?: boolean;
+          is_default?: boolean;
+          configuration?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          code?: string;
+          is_active?: boolean;
+          is_default?: boolean;
+          configuration?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      fulfillments: {
+        Row: {
+          id: string;
+          order_id: string;
+          courier_provider_id: string | null;
+          status: DeliveryStatus;
+          tracking_number: string | null;
+          shipping_label_url: string | null;
+          shipment_reference: string | null;
+          pickup_reference: string | null;
+          courier_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          courier_provider_id?: string | null;
+          status?: DeliveryStatus;
+          tracking_number?: string | null;
+          shipping_label_url?: string | null;
+          shipment_reference?: string | null;
+          pickup_reference?: string | null;
+          courier_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          courier_provider_id?: string | null;
+          status?: DeliveryStatus;
+          tracking_number?: string | null;
+          shipping_label_url?: string | null;
+          shipment_reference?: string | null;
+          pickup_reference?: string | null;
+          courier_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "fulfillments_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fulfillments_courier_provider_id_fkey";
+            columns: ["courier_provider_id"];
+            isOneToOne: false;
+            referencedRelation: "courier_providers";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      return_requests: {
+        Row: {
+          id: string;
+          order_id: string;
+          customer_id: string | null;
+          reason: string;
+          status: ReturnStatus;
+          items: Json;
+          admin_notes: string | null;
+          requested_at: string;
+          approved_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          customer_id?: string | null;
+          reason: string;
+          status?: ReturnStatus;
+          items?: Json;
+          admin_notes?: string | null;
+          requested_at?: string;
+          approved_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          customer_id?: string | null;
+          reason?: string;
+          status?: ReturnStatus;
+          items?: Json;
+          admin_notes?: string | null;
+          requested_at?: string;
+          approved_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "return_requests_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "return_requests_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          channel: NotificationChannel;
+          type: string;
+          title: string;
+          message: string;
+          resource_type: string | null;
+          resource_id: string | null;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          channel?: NotificationChannel;
+          type: string;
+          title: string;
+          message: string;
+          resource_type?: string | null;
+          resource_id?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          channel?: NotificationChannel;
+          type?: string;
+          title?: string;
+          message?: string;
+          resource_type?: string | null;
+          resource_id?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       categories: {
         Row: {
           id: string;
@@ -872,6 +1079,9 @@ export interface Database {
       order_status: OrderStatus;
       payment_status: PaymentStatus;
       fulfillment_status: FulfillmentStatus;
+      delivery_status: DeliveryStatus;
+      return_status: ReturnStatus;
+      notification_channel: NotificationChannel;
     };
   };
 }
