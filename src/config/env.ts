@@ -22,9 +22,10 @@ const serverEnvSchema = clientEnvSchema.extend({
   
   // Cloudflare R2 Credentials
   R2_ACCOUNT_ID: z.string().min(1, { message: "R2_ACCOUNT_ID is required" }),
-  R2_ACCESS_KEY_ID: z.string().min(1, { message: "R2_ACCESS_KEY_ID is required" }),
-  R2_SECRET_ACCESS_KEY: z.string().min(1, { message: "R2_SECRET_ACCESS_KEY is required" }),
-  R2_BUCKET_NAME: z.string().min(1, { message: "R2_BUCKET_NAME is required" }).default("rustrevive-media-prod"),
+  CLOUDFLARE_API_TOKEN: z.string().min(1).optional(),
+  R2_ACCESS_KEY_ID: z.string().optional().default("r2-access-key-placeholder"),
+  R2_SECRET_ACCESS_KEY: z.string().optional().default("r2-secret-key-placeholder"),
+  R2_BUCKET_NAME: z.string().min(1, { message: "R2_BUCKET_NAME is required" }).default("rustandrevive"),
   R2_ENDPOINT: z.string().url().optional(),
 });
 

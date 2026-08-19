@@ -5,22 +5,17 @@ import { successResponse, errorResponse } from "@/lib/api/response";
 import { getCurrentAdminUser } from "@/lib/auth/session";
 import { requirePermission } from "@/lib/auth/rbac";
 
-export async function GET(request: NextRequest) {
+export const dynamic = "force-dynamic";
+
+export async function GET(_request: NextRequest) {
   try {
     const user = await getCurrentAdminUser();
     requirePermission(user, "content:view");
 
-    const { searchParams } = new URL(request.url);
-    const mode = searchParams.get("mode") || "draft";
-
-    const config =
-      mode === "published"
-        ? await CMSService.getPublishedHomepageConfig()
-        : await CMSService.getDraftHomepageConfig();
-
+    const config = await CMSService.getPublishedHomepageConfig();
     return successResponse(config);
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse(error, "GET /api/admin/cms");
   }
 }
 
@@ -32,11 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "publish") {
       requirePermission(user, "content:publish");
-      if (config) {
-        await CMSService.saveDraft(config);
-      }
-      const published = await CMSService.publishDraft();
-      // On-demand Next.js ISR cache revalidation
+      const published = await CMSService.publishHomepage(config);
       revalidatePath("/");
       return successResponse(published, 200);
     }
@@ -45,6 +36,6 @@ export async function POST(request: NextRequest) {
     const updatedDraft = await CMSService.saveDraft(config);
     return successResponse(updatedDraft, 200);
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse(error, "POST /api/admin/cms");
   }
 }

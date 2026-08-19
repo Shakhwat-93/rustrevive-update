@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Plus, Download, Upload } from "lucide-react";
+import { Plus, Download, RefreshCw, Package } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { AdminButton } from "@/components/admin/ui/admin-button";
-import { FEATURED_PRODUCTS } from "@/data/homepage.data";
+import { AdminEmptyState } from "@/components/admin/ui/admin-empty-state";
+import { TableSkeleton } from "@/components/admin/ui/admin-skeleton";
 
 interface AdminProductRow {
   id: string;
@@ -22,22 +23,61 @@ interface AdminProductRow {
   imageUrl: string;
 }
 
-const INITIAL_PRODUCTS: AdminProductRow[] = FEATURED_PRODUCTS.map((p, idx) => ({
-  id: p.id,
-  title: p.title,
-  category: p.category,
-  sku: `RR-${p.category.slice(0, 3).toUpperCase()}-00${idx + 1}`,
-  price: Math.round(p.priceCents * 1.2),
-  compareAtPrice: p.compareAtPriceCents ? Math.round(p.compareAtPriceCents * 1.2) : undefined,
-  inventory: idx === 2 ? 2 : idx === 0 ? 3 : 24,
-  status: idx === 1 ? "draft" : "active",
-  imageUrl: p.imageUrl,
-}));
+interface RawProductData {
+  id: string;
+  title: string;
+  sku: string;
+  status: string;
+  base_price: number;
+  compare_at_price?: number;
+  categories?: { name?: string };
+  product_media?: Array<{ is_primary?: boolean; media?: { public_url?: string } }>;
+  inventory?: Array<{ quantity?: number }>;
+}
 
 export default function AdminProductsPage() {
   const router = useRouter();
-  const [products, setProducts] = useState<AdminProductRow[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<AdminProductRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+
+  const loadProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (activeFilter !== "ALL") params.set("status", activeFilter);
+
+      const res = await fetch(`/api/admin/products?${params.toString()}`);
+      const json = await res.json();
+
+      if (json.success && json.data) {
+        const mapped: AdminProductRow[] = (json.data.products || []).map((p: RawProductData) => {
+          const primaryMedia = p.product_media?.find((pm) => pm.is_primary) || p.product_media?.[0];
+          const totalInv = (p.inventory || []).reduce((acc: number, inv) => acc + (inv.quantity || 0), 0);
+          return {
+            id: p.id,
+            title: p.title,
+            category: p.categories?.name || "Uncategorized",
+            sku: p.sku,
+            price: p.base_price,
+            compareAtPrice: p.compare_at_price,
+            inventory: totalInv,
+            status: p.status.toLowerCase() as "active" | "draft" | "archived",
+            imageUrl: primaryMedia?.media?.public_url || "https://pub-90e6c63b53cb4c518fdafb3bfeb44169.r2.dev/placeholder.webp",
+          };
+        });
+        setProducts(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to load products:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeFilter]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const filterTabs = [
     { label: "All Products", value: "ALL", count: products.length },
@@ -58,36 +98,6 @@ export default function AdminProductsPage() {
     },
   ];
 
-  const filteredProducts =
-    activeFilter === "ALL"
-      ? products
-      : products.filter((p) => p.status.toUpperCase() === activeFilter);
-
-  // Bulk Operations
-  const handleBulkStatusChange = (selectedIds: string[], status: string) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        selectedIds.includes(p.id)
-          ? { ...p, status: status.toLowerCase() as "active" | "draft" | "archived" }
-          : p
-      )
-    );
-  };
-
-  const handleBulkArchive = (selectedIds: string[]) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        selectedIds.includes(p.id) ? { ...p, status: "archived" } : p
-      )
-    );
-  };
-
-  const handleBulkDelete = (selectedIds: string[]) => {
-    if (confirm(`Are you sure you want to delete ${selectedIds.length} products?`)) {
-      setProducts((prev) => prev.filter((p) => !selectedIds.includes(p.id)));
-    }
-  };
-
   const columns: ColumnDef<AdminProductRow>[] = [
     {
       key: "title",
@@ -102,6 +112,7 @@ export default function AdminProductsPage() {
               fill
               sizes="40px"
               className="object-cover object-center"
+              unoptimized
             />
           </div>
           <div>
@@ -156,6 +167,10 @@ export default function AdminProductsPage() {
       subtitle="Manage garment catalog, variants, pricing, and stock levels."
       actions={
         <>
+          <AdminButton variant="ghost" icon={RefreshCw} onClick={loadProducts}>
+            Refresh
+          </AdminButton>
+
           <AdminButton
             variant="secondary"
             icon={Download}
@@ -164,33 +179,34 @@ export default function AdminProductsPage() {
             Export
           </AdminButton>
 
-          <AdminButton
-            variant="secondary"
-            icon={Upload}
-            onClick={() => alert("Import product CSV...")}
-          >
-            Import
-          </AdminButton>
-
           <AdminButton href="/admin/products/new" icon={Plus}>
             Add Product
           </AdminButton>
         </>
       }
     >
-      <DataTable
-        data={filteredProducts}
-        columns={columns}
-        searchPlaceholder="Filter products by title, SKU, category..."
-        searchKey="title"
-        filterTabs={filterTabs}
-        activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
-        onRowClick={(item) => router.push(`/admin/products/${item.id}`)}
-        onBulkStatusChange={handleBulkStatusChange}
-        onBulkArchive={handleBulkArchive}
-        onBulkDelete={handleBulkDelete}
-      />
+      {loading ? (
+        <TableSkeleton rows={5} />
+      ) : products.length === 0 ? (
+        <AdminEmptyState
+          icon={Package}
+          title="No products found"
+          description="Your product catalog is empty. Create your first luxury garment piece to begin selling."
+          actionText="Add Product"
+          actionHref="/admin/products/new"
+        />
+      ) : (
+        <DataTable
+          data={products}
+          columns={columns}
+          searchPlaceholder="Filter products by title, SKU, category..."
+          searchKey="title"
+          filterTabs={filterTabs}
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          onRowClick={(item) => router.push(`/admin/products/${item.id}`)}
+        />
+      )}
     </AdminPageLayout>
   );
 }

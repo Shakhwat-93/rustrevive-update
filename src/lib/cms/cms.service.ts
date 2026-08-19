@@ -1,119 +1,112 @@
-import type { HomepageConfig, HomepageSectionKey } from "@/types/cms.types";
-import {
-  HERO_SLIDES,
-  COLLECTIONS_DATA,
-  STATEMENT_DATA,
-  FEATURED_PRODUCTS,
-  BRAND_STORY_DATA,
-  LOOKBOOK_DATA,
-  CATEGORY_EXPLORER_DATA,
-  MANIFESTO_DATA,
-  ESSENTIALS_PRODUCTS,
-} from "@/data/homepage.data";
+import type { HomepageConfig } from "@/types/cms.types";
+import type { Json } from "@/types/database.types";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createPublicServerClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { logger } from "@/lib/logging/logger";
+import { getDefaultHomepageConfig } from "@/lib/cms/cms.defaults";
 
-export const DEFAULT_HOMEPAGE_SECTIONS = [
-  { id: "hero" as HomepageSectionKey, label: "Hero Campaign Carousel", enabled: true, order: 1 },
-  { id: "collections" as HomepageSectionKey, label: "Shop The Collection", enabled: true, order: 2 },
-  { id: "statement" as HomepageSectionKey, label: "R&R Brand Statement", enabled: true, order: 3 },
-  { id: "featured_products" as HomepageSectionKey, label: "Selected Pieces (The Edit)", enabled: true, order: 4 },
-  { id: "brand_story" as HomepageSectionKey, label: "Brand Story & Heritage", enabled: true, order: 5 },
-  { id: "lookbook" as HomepageSectionKey, label: "Lookbook Visual Gallery", enabled: true, order: 6 },
-  { id: "category_explorer" as HomepageSectionKey, label: "Category Navigation Index", enabled: true, order: 7 },
-  { id: "manifesto" as HomepageSectionKey, label: "Brand Manifesto", enabled: true, order: 8 },
-  { id: "everyday_essentials" as HomepageSectionKey, label: "Everyday Essentials", enabled: true, order: 9 },
-  { id: "trust_grid" as HomepageSectionKey, label: "Service & Trust Row", enabled: true, order: 10 },
-  { id: "community" as HomepageSectionKey, label: "Community & Newsletter", enabled: true, order: 11 },
-];
-
-export function getDefaultHomepageConfig(): HomepageConfig {
-  return {
-    version: 1,
-    status: "PUBLISHED",
-    lastPublishedAt: new Date().toISOString(),
-    lastUpdatedAt: new Date().toISOString(),
-    sections: DEFAULT_HOMEPAGE_SECTIONS,
-    heroSlides: HERO_SLIDES,
-    collections: COLLECTIONS_DATA,
-    statement: {
-      headlineLine1: STATEMENT_DATA.headlineLine1,
-      headlineLine2: STATEMENT_DATA.headlineLine2,
-      headlineLine3: STATEMENT_DATA.headlineLine3,
-      subtext: STATEMENT_DATA.subtext,
-    },
-    featuredProducts: FEATURED_PRODUCTS,
-    brandStory: {
-      headline: BRAND_STORY_DATA.headlineLine2,
-      paragraph: BRAND_STORY_DATA.paragraph1,
-      ctaText: "OUR STORY",
-      ctaHref: BRAND_STORY_DATA.ctaHref,
-      imageUrl: BRAND_STORY_DATA.imageUrl,
-    },
-    lookbook: LOOKBOOK_DATA,
-    categoryExplorer: CATEGORY_EXPLORER_DATA,
-    manifesto: {
-      quoteLine1: MANIFESTO_DATA.quoteLine1,
-      quoteLine2: MANIFESTO_DATA.quoteLine2,
-      quoteLine3: MANIFESTO_DATA.quoteLine3,
-    },
-    everydayEssentials: ESSENTIALS_PRODUCTS,
-    community: {
-      headline: "STAY IN THE LOOP",
-      supportingText: "Sign up for private seasonal releases and stories.",
-      instagramUrl: "https://instagram.com/rustrevive",
-      facebookUrl: "https://facebook.com/rustrevive",
-      tiktokUrl: "https://tiktok.com/@rustrevive",
-    },
-  };
-}
-
-// In-memory / persisted CMS store
-let liveHomepageConfig: HomepageConfig = getDefaultHomepageConfig();
-let draftHomepageConfig: HomepageConfig = {
-  ...getDefaultHomepageConfig(),
-  status: "DRAFT",
-};
+export { getDefaultHomepageConfig };
 
 export class CMSService {
   /**
-   * Retrieves current published homepage configuration for the public storefront.
+   * Fetch currently published homepage configuration from Supabase PostgreSQL
    */
   public static async getPublishedHomepageConfig(): Promise<HomepageConfig> {
-    return liveHomepageConfig;
+    try {
+      const supabase = createPublicServerClient();
+      const { data, error } = await supabase
+        .from("homepage_cms")
+        .select("config, version, status, last_published_at, updated_at")
+        .eq("status", "PUBLISHED")
+        .order("version", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        return getDefaultHomepageConfig();
+      }
+
+      const row = data as unknown as { config?: HomepageConfig };
+      if (!row.config) {
+        return getDefaultHomepageConfig();
+      }
+
+      return row.config;
+    } catch (err) {
+      logger.error("Failed to load published homepage CMS from Supabase", err, "CMSService");
+      return getDefaultHomepageConfig();
+    }
   }
 
   /**
-   * Retrieves draft homepage configuration for the admin studio.
+   * Save Homepage CMS Draft to Supabase
    */
-  public static async getDraftHomepageConfig(): Promise<HomepageConfig> {
-    return draftHomepageConfig;
-  }
+  public static async saveDraft(config: HomepageConfig): Promise<HomepageConfig> {
+    const supabase = createAdminClient();
 
-  /**
-   * Saves changes to the draft configuration.
-   */
-  public static async saveDraft(config: Partial<HomepageConfig>): Promise<HomepageConfig> {
-    draftHomepageConfig = {
-      ...draftHomepageConfig,
+    const updatedConfig: HomepageConfig = {
       ...config,
       status: "DRAFT",
       lastUpdatedAt: new Date().toISOString(),
     };
-    return draftHomepageConfig;
+
+    const { error } = await supabase
+      .from("homepage_cms")
+      .upsert({
+        id: "00000000-0000-0000-0000-000000000001",
+        version: config.version || 1,
+        status: "DRAFT",
+        config: updatedConfig as unknown as Json,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      logger.error("Failed to save homepage draft to Supabase", error, "CMSService");
+      throw new Error(`Draft save failed: ${error.message}`);
+    }
+
+    return updatedConfig;
   }
 
   /**
-   * Publishes draft configuration to the live storefront and increments version.
+   * Publish Homepage CMS: Saves to Supabase and triggers on-demand ISR revalidation
    */
-  public static async publishDraft(): Promise<HomepageConfig> {
-    const publishedAt = new Date().toISOString();
-    liveHomepageConfig = {
-      ...draftHomepageConfig,
+  public static async publishHomepage(config: HomepageConfig): Promise<HomepageConfig> {
+    const supabase = createAdminClient();
+
+    const publishedConfig: HomepageConfig = {
+      ...config,
+      version: (config.version || 1) + 1,
       status: "PUBLISHED",
-      version: draftHomepageConfig.version + 1,
-      lastPublishedAt: publishedAt,
-      lastUpdatedAt: publishedAt,
+      lastPublishedAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
     };
-    draftHomepageConfig = { ...liveHomepageConfig, status: "DRAFT" };
-    return liveHomepageConfig;
+
+    const { error } = await supabase
+      .from("homepage_cms")
+      .upsert({
+        id: "00000000-0000-0000-0000-000000000001",
+        version: publishedConfig.version,
+        status: "PUBLISHED",
+        config: publishedConfig as unknown as Json,
+        last_published_at: publishedConfig.lastPublishedAt,
+        updated_at: publishedConfig.lastUpdatedAt,
+      });
+
+    if (error) {
+      logger.error("Failed to publish homepage config to Supabase", error, "CMSService");
+      throw new Error(`Publish failed: ${error.message}`);
+    }
+
+    // Trigger instant on-demand Next.js ISR revalidation
+    try {
+      revalidatePath("/");
+      logger.info("Triggered on-demand ISR revalidation for homepage '/'", "CMSService");
+    } catch (revalidateErr) {
+      logger.warn("ISR revalidation warning", "CMSService", { revalidateErr });
+    }
+
+    return publishedConfig;
   }
 }

@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { RefreshCw, Package } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
+import { AdminButton } from "@/components/admin/ui/admin-button";
+import { AdminEmptyState } from "@/components/admin/ui/admin-empty-state";
+import { TableSkeleton } from "@/components/admin/ui/admin-skeleton";
 
 interface InventoryRow {
   id: string;
@@ -15,30 +19,80 @@ interface InventoryRow {
   status: "active" | "low_stock" | "out_of_stock";
 }
 
-const INVENTORY_DATA: InventoryRow[] = [
-  { id: "inv-1", sku: "RR-PNT-001-S", productName: "Wide Leg Pleated Sweatpants", variant: "Size S / Charcoal", available: 6, reserved: 1, status: "active" },
-  { id: "inv-2", sku: "RR-PNT-001-M", productName: "Wide Leg Pleated Sweatpants", variant: "Size M / Charcoal", available: 3, reserved: 2, status: "low_stock" },
-  { id: "inv-3", sku: "RR-DNM-002-32", productName: "FB Sister Unisex Baggy Jeans", variant: "Size 32 / Raw Indigo", available: 12, reserved: 0, status: "active" },
-  { id: "inv-4", sku: "RR-JKT-003-L", productName: "Vintage Washed Aviator Jacket", variant: "Size L / Cognac", available: 2, reserved: 1, status: "low_stock" },
-  { id: "inv-5", sku: "RR-TEE-004-XL", productName: "280GSM Heavy Boxy Tee", variant: "Size XL / Faded Rust", available: 1, reserved: 0, status: "low_stock" },
-  { id: "inv-6", sku: "RR-BLT-005-32", productName: "Vegetable Tanned Leather Belt", variant: "Size 32 / Saddle Brown", available: 18, reserved: 3, status: "active" },
-];
+interface RawInventoryItem {
+  id: string;
+  quantity?: number;
+  reserved_quantity?: number;
+  low_stock_threshold?: number;
+  products?: { title?: string; sku?: string };
+  product_variants?: { title?: string; sku?: string };
+}
 
 export default function AdminInventoryPage() {
-  const [inventory, setInventory] = useState<InventoryRow[]>(INVENTORY_DATA);
+  const [inventory, setInventory] = useState<InventoryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adjustingId, setAdjustingId] = useState<string | null>(null);
 
-  const handleAdjust = (id: string, delta: number) => {
-    setInventory((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const nextAvail = Math.max(0, item.available + delta);
-        return {
-          ...item,
-          available: nextAvail,
-          status: nextAvail === 0 ? "out_of_stock" : nextAvail <= 3 ? "low_stock" : "active",
-        };
-      })
-    );
+  const loadInventory = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/inventory");
+      const json = await res.json();
+      if (json.success && json.data) {
+        const mapped: InventoryRow[] = (json.data.items || []).map((item: RawInventoryItem) => {
+          const avail = item.quantity || 0;
+          const status = avail === 0 ? "out_of_stock" : avail <= (item.low_stock_threshold || 3) ? "low_stock" : "active";
+          return {
+            id: item.id,
+            sku: item.product_variants?.sku || item.products?.sku || "N/A",
+            productName: item.products?.title || "Unknown Product",
+            variant: item.product_variants?.title || "Standard",
+            available: avail,
+            reserved: item.reserved_quantity || 0,
+            status,
+          };
+        });
+        setInventory(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to load inventory:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadInventory();
+  }, [loadInventory]);
+
+  const handleAdjust = async (id: string, delta: number) => {
+    try {
+      setAdjustingId(id);
+      const res = await fetch("/api/admin/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inventory_id: id,
+          quantity_change: delta,
+          movement_type: delta > 0 ? "RESTOCK" : "MANUAL_ADJUSTMENT",
+          reason: "Manual adjustment via Admin Panel",
+          actor_name: "Admin",
+        }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        alert(json.error?.message || "Adjustment failed");
+        return;
+      }
+
+      await loadInventory();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Adjustment error";
+      alert(`Error: ${msg}`);
+    } finally {
+      setAdjustingId(null);
+    }
   };
 
   const columns: ColumnDef<InventoryRow>[] = [
@@ -78,8 +132,9 @@ export default function AdminInventoryPage() {
       cell: (item) => (
         <div className="flex items-center space-x-2">
           <button
+            disabled={adjustingId === item.id || item.available <= 0}
             onClick={() => handleAdjust(item.id, -1)}
-            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors"
+            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors disabled:opacity-40"
           >
             -
           </button>
@@ -87,8 +142,9 @@ export default function AdminInventoryPage() {
             {item.available}
           </span>
           <button
+            disabled={adjustingId === item.id}
             onClick={() => handleAdjust(item.id, 1)}
-            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors"
+            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors disabled:opacity-40"
           >
             +
           </button>
@@ -100,14 +156,31 @@ export default function AdminInventoryPage() {
   return (
     <AdminPageLayout
       title="Inventory"
-      subtitle="Track available vs. reserved stock levels and log inventory movements."
+      subtitle="Track available vs. reserved stock levels and log atomic inventory movements."
+      actions={
+        <AdminButton variant="ghost" icon={RefreshCw} onClick={loadInventory}>
+          Refresh
+        </AdminButton>
+      }
     >
-      <DataTable
-        data={inventory}
-        columns={columns}
-        searchPlaceholder="Search by SKU, product name..."
-        searchKey="productName"
-      />
+      {loading ? (
+        <TableSkeleton rows={5} />
+      ) : inventory.length === 0 ? (
+        <AdminEmptyState
+          icon={Package}
+          title="No inventory records"
+          description="Inventory rows will be automatically generated whenever products or variants are created."
+          actionText="Add Product"
+          actionHref="/admin/products/new"
+        />
+      ) : (
+        <DataTable
+          data={inventory}
+          columns={columns}
+          searchPlaceholder="Search by SKU, product name..."
+          searchKey="productName"
+        />
+      )}
     </AdminPageLayout>
   );
 }

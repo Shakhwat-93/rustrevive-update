@@ -12,7 +12,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { HomepageConfig, HeroSlide } from "@/types/cms.types";
-import { getDefaultHomepageConfig } from "@/lib/cms/cms.service";
+import { getDefaultHomepageConfig } from "@/lib/cms/cms.defaults";
 
 export default function HomepageCMSStudio() {
   const [config, setConfig] = useState<HomepageConfig>(getDefaultHomepageConfig());
