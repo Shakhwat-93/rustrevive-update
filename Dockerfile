@@ -7,6 +7,7 @@
 FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
+RUN mkdir -p /app/public
 
 # 2. Dependencies Stage
 FROM base AS deps
@@ -18,15 +19,17 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p /app/public
 
-# Environment variables needed during build
+# Build-time environment variables for Next.js static asset compilation
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_SITE_URL="https://rustrevive.store"
-ENV NEXT_PUBLIC_SUPABASE_URL="http://supabasekong-n95ugz0lqx76mpheb0sxaaa2.187.127.218.211.sslip.io"
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im45NXVnejBscXg3Nm1waGViMHN4YWFhMiIsInJvbGUiOiJwb2xpY3kiLCJpYXQiOjE3NzA3MzQyMTcsImV4cCI6MjA4NjMxMDIxN30.K9s2m46Yw1Bv-x5Kz_y9xZ0kQ-7_w9vK6y_vK6y_vK4"
-ENV SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im45NXVnejBscXg3Nm1waGViMHN4YWFhMiIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE3NzA3MzQyMTcsImV4cCI6MjA4NjMxMDIxN30.i9w7881cO2YjZq4rX_h8kQ2_z_l9yX0kQ-7_w9vK6y_vK6y_vK4"
-ENV R2_ACCOUNT_ID="d74dd7a21d47d4eb876eb76eafab664d"
+ENV NEXT_PUBLIC_SUPABASE_URL="https://placeholder.supabase.co"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="placeholder-anon-key"
+ENV NEXT_PUBLIC_MEDIA_URL="https://pub-90e6c63b53cb4c518fdafb3bfeb44169.r2.dev"
+ENV SUPABASE_SERVICE_ROLE_KEY="placeholder-service-role-key"
+ENV R2_ACCOUNT_ID="placeholder-r2-account"
 ENV R2_BUCKET_NAME="rustandrevive"
 
 # Run standalone production build
@@ -46,7 +49,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy public directory and standalone artifacts
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
