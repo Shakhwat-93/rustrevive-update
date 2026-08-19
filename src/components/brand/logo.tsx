@@ -35,7 +35,7 @@ export function Logo({
         className={`font-serif-editorial font-medium uppercase leading-none whitespace-nowrap ${sizeClasses[size]} ${colorClasses[variant]}`}
       >
         <span>RUST</span>
-        <span className="text-[#9e472a] font-light mx-1">&amp;</span>
+        <span className="text-[#9e472a] font-light mx-1">&</span>
         <span>REVIVE</span>
       </div>
       {showTagline && (

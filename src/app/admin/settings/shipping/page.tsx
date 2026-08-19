@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { AdminButton } from "@/components/admin/ui/admin-button";
+import { useAdminDialog } from "@/context/admin-dialog-context";
 
 interface ShippingMethod {
   id: string;
@@ -29,6 +30,7 @@ export default function AdminShippingSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { showToast, confirm } = useAdminDialog();
 
   // Form State
   const [formName, setFormName] = useState("");
@@ -110,22 +112,32 @@ export default function AdminShippingSettingsPage() {
       }
 
       setShowModal(false);
+      showToast(editingId ? "Shipping method updated successfully" : "Shipping method created successfully", "success");
       fetchMethods();
     } catch (err) {
-      alert((err as Error).message || "Operation failed");
+      showToast((err as Error).message || "Operation failed", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this shipping method?")) return;
+    const ok = await confirm({
+      title: "Delete Shipping Method?",
+      message: "Are you sure you want to delete this shipping rate? Customers will no longer be able to select this at checkout.",
+      confirmText: "Delete Method",
+      variant: "danger",
+    });
+
+    if (!ok) return;
+
     try {
       const res = await fetch(`/api/admin/shipping-methods/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
+      showToast("Shipping method deleted", "success");
       fetchMethods();
     } catch (err) {
-      alert((err as Error).message || "Delete failed");
+      showToast((err as Error).message || "Delete failed", "error");
     }
   };
 

@@ -84,41 +84,41 @@ export default function AdminAnalyticsPage() {
         </div>
       }
     >
-      {/* 1. Summary Metrics Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 1. Summary Metrics Banner (2 cols on mobile, 4 on lg) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <AdminCard title="Gross Sales">
-          <div className="space-y-1">
-            <span className="text-2xl font-bold font-mono text-slate-900">
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-lg sm:text-2xl font-bold font-mono text-slate-900 block truncate">
               ৳{(data?.summary.totalRevenue || 0).toLocaleString()}
             </span>
-            <p className="text-xs font-mono text-slate-500">Realized revenue in selected window</p>
+            <p className="text-[10px] sm:text-xs font-mono text-slate-500 line-clamp-1">Realized revenue</p>
           </div>
         </AdminCard>
 
-        <AdminCard title="Completed Orders">
-          <div className="space-y-1">
-            <span className="text-2xl font-bold font-mono text-slate-900">
+        <AdminCard title="Orders">
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-lg sm:text-2xl font-bold font-mono text-slate-900 block truncate">
               {data?.summary.orderCount || 0}
             </span>
-            <p className="text-xs font-mono text-slate-500">Excluding cancelled consignments</p>
+            <p className="text-[10px] sm:text-xs font-mono text-slate-500 line-clamp-1">Completed orders</p>
           </div>
         </AdminCard>
 
-        <AdminCard title="Average Order Value (AOV)">
-          <div className="space-y-1">
-            <span className="text-2xl font-bold font-mono text-slate-900">
+        <AdminCard title="Avg Order Value">
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-lg sm:text-2xl font-bold font-mono text-slate-900 block truncate">
               ৳{(data?.summary.aov || 0).toLocaleString()}
             </span>
-            <p className="text-xs font-mono text-slate-500">Average spend per completed order</p>
+            <p className="text-[10px] sm:text-xs font-mono text-slate-500 line-clamp-1">Average per order</p>
           </div>
         </AdminCard>
 
-        <AdminCard title="Conversion Rate">
-          <div className="space-y-1">
-            <span className="text-2xl font-bold font-mono text-emerald-700">
+        <AdminCard title="Conversion">
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-lg sm:text-2xl font-bold font-mono text-emerald-700 block truncate">
               {data?.summary.conversionRate || 0}%
             </span>
-            <p className="text-xs font-mono text-slate-500">Product views to completed purchases</p>
+            <p className="text-[10px] sm:text-xs font-mono text-slate-500 line-clamp-1">View to purchase</p>
           </div>
         </AdminCard>
       </div>

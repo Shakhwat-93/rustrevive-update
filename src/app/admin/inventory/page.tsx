@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Package } from "lucide-react";
+import { RefreshCw, Package, Plus, Minus } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminEmptyState } from "@/components/admin/ui/admin-empty-state";
 import { TableSkeleton } from "@/components/admin/ui/admin-skeleton";
+import { useAdminDialog } from "@/context/admin-dialog-context";
 
 interface InventoryRow {
   id: string;
@@ -32,6 +33,7 @@ export default function AdminInventoryPage() {
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
+  const { showToast } = useAdminDialog();
 
   const loadInventory = useCallback(async () => {
     try {
@@ -82,14 +84,15 @@ export default function AdminInventoryPage() {
 
       if (!res.ok) {
         const json = await res.json();
-        alert(json.error?.message || "Adjustment failed");
+        showToast(json.error?.message || "Adjustment failed", "error");
         return;
       }
 
+      showToast(`Stock updated (${delta > 0 ? "+" : ""}${delta})`, "success");
       await loadInventory();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Adjustment error";
-      alert(`Error: ${msg}`);
+      showToast(`Error: ${msg}`, "error");
     } finally {
       setAdjustingId(null);
     }
@@ -134,9 +137,10 @@ export default function AdminInventoryPage() {
           <button
             disabled={adjustingId === item.id || item.available <= 0}
             onClick={() => handleAdjust(item.id, -1)}
-            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors disabled:opacity-40"
+            className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors disabled:opacity-40"
+            aria-label="Decrease stock"
           >
-            -
+            <Minus className="w-3 h-3" />
           </button>
           <span className="font-mono font-semibold text-slate-900 w-8 text-center">
             {item.available}
@@ -144,21 +148,83 @@ export default function AdminInventoryPage() {
           <button
             disabled={adjustingId === item.id}
             onClick={() => handleAdjust(item.id, 1)}
-            className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors disabled:opacity-40"
+            className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-mono cursor-pointer transition-colors disabled:opacity-40"
+            aria-label="Increase stock"
           >
-            +
+            <Plus className="w-3 h-3" />
           </button>
         </div>
       ),
     },
   ];
 
+  // Mobile Inventory Card Render
+  const renderMobileInventoryCard = (item: InventoryRow) => {
+    return (
+      <div className="space-y-2.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h4 className="font-semibold text-xs text-slate-900 truncate">
+              {item.productName}
+            </h4>
+            <div className="flex items-center space-x-2 text-[11px] font-mono text-slate-500 mt-0.5">
+              <span>{item.sku}</span>
+              <span>•</span>
+              <span>{item.variant}</span>
+            </div>
+          </div>
+          <StatusBadge status={item.status} size="sm" />
+        </div>
+
+        <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs font-mono">
+          <div className="text-slate-500">
+            Reserved: <strong className="text-slate-700">{item.reserved}</strong>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <span className="text-slate-500 text-[11px]">Available:</span>
+            <button
+              disabled={adjustingId === item.id || item.available <= 0}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAdjust(item.id, -1);
+              }}
+              className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-40 shrink-0"
+              aria-label="Decrease stock"
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="font-bold text-slate-900 w-6 text-center text-sm">
+              {item.available}
+            </span>
+            <button
+              disabled={adjustingId === item.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAdjust(item.id, 1);
+              }}
+              className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-40 shrink-0"
+              aria-label="Increase stock"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <AdminPageLayout
       title="Inventory"
       subtitle="Track available vs. reserved stock levels and log atomic inventory movements."
+      badge={
+        <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-semibold">
+          {inventory.length} items
+        </span>
+      }
       actions={
-        <AdminButton variant="ghost" icon={RefreshCw} onClick={loadInventory}>
+        <AdminButton variant="secondary" icon={RefreshCw} onClick={loadInventory} isLoading={loading}>
           Refresh
         </AdminButton>
       }
@@ -179,6 +245,7 @@ export default function AdminInventoryPage() {
           columns={columns}
           searchPlaceholder="Search by SKU, product name..."
           searchKey="productName"
+          mobileCardRender={renderMobileInventoryCard}
         />
       )}
     </AdminPageLayout>

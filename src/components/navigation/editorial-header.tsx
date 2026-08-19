@@ -226,8 +226,8 @@ export function EditorialHeader() {
               >
                 ACCOUNT LOGIN
               </Link>
-              <div className="text-[10px] uppercase tracking-widest text-[#8c8577]">
-                &copy; {new Date().getFullYear()} RUST &amp; REVIVE &mdash; DHAKA
+              <div suppressHydrationWarning className="text-[10px] uppercase tracking-widest text-[#8c8577]">
+                © {new Date().getFullYear()} RUST &amp; REVIVE — DHAKA
               </div>
             </div>
           </div>

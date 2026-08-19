@@ -82,6 +82,45 @@ export type AnalyticsEventType =
 export interface Database {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          display_name: string | null;
+          phone: string | null;
+          avatar_url: string | null;
+          email: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          display_name?: string | null;
+          phone?: string | null;
+          avatar_url?: string | null;
+          email?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          display_name?: string | null;
+          phone?: string | null;
+          avatar_url?: string | null;
+          email?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       payment_transactions: {
         Row: {
           id: string;

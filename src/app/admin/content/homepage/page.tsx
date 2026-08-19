@@ -9,17 +9,17 @@ import {
   Trash2,
   MoveUp,
   MoveDown,
-  CheckCircle2,
 } from "lucide-react";
 import type { HomepageConfig, HeroSlide } from "@/types/cms.types";
 import { getDefaultHomepageConfig } from "@/lib/cms/cms.defaults";
+import { useAdminDialog } from "@/context/admin-dialog-context";
 
 export default function HomepageCMSStudio() {
   const [config, setConfig] = useState<HomepageConfig>(getDefaultHomepageConfig());
   const [activeTab, setActiveTab] = useState<"sections" | "hero" | "statement" | "brand">("hero");
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [notification, setNotification] = useState<string | null>(null);
+  const { showToast, confirm } = useAdminDialog();
 
   // Load existing configuration from API
   useEffect(() => {
@@ -33,32 +33,35 @@ export default function HomepageCMSStudio() {
       .catch((err) => console.error("Failed to load CMS draft:", err));
   }, []);
 
-  const showNotification = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
-  };
-
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
       const res = await fetch("/api/admin/cms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save", config }),
+        body: JSON.stringify({ action: "save_draft", config }),
       });
       const data = await res.json();
       if (data.success) {
-        showNotification("Draft changes saved successfully.");
+        showToast("Draft changes saved successfully.", "success");
       }
     } catch (err) {
       console.error(err);
-      showNotification("Failed to save draft.");
+      showToast("Failed to save draft.", "error");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handlePublish = async () => {
+    const ok = await confirm({
+      title: "Publish Storefront Changes?",
+      message: "This will push all homepage slides, section arrangements, and brand copy live to the production storefront.",
+      confirmText: "Publish Live",
+      variant: "primary",
+    });
+    if (!ok) return;
+
     setIsPublishing(true);
     try {
       const res = await fetch("/api/admin/cms", {
@@ -69,11 +72,11 @@ export default function HomepageCMSStudio() {
       const data = await res.json();
       if (data.success) {
         setConfig((prev) => ({ ...prev, status: "PUBLISHED", version: prev.version + 1 }));
-        showNotification("🎉 Storefront successfully published! Live cache revalidated.");
+        showToast("🎉 Storefront successfully published! Live cache revalidated.", "success");
       }
     } catch (err) {
       console.error(err);
-      showNotification("Failed to publish storefront.");
+      showToast("Failed to publish storefront.", "error");
     } finally {
       setIsPublishing(false);
     }
@@ -131,15 +134,24 @@ export default function HomepageCMSStudio() {
     setConfig((prev) => ({ ...prev, heroSlides: [...prev.heroSlides, newSlide] }));
   };
 
-  const deleteHeroSlide = (index: number) => {
+  const deleteHeroSlide = async (index: number) => {
     if (config.heroSlides.length <= 1) {
-      alert("At least one hero slide is required.");
+      showToast("At least one hero slide is required for storefront presentation.", "warning");
       return;
     }
+    const ok = await confirm({
+      title: "Remove Hero Slide?",
+      message: "Are you sure you want to remove this campaign slide from the homepage carousel?",
+      confirmText: "Remove Slide",
+      variant: "danger",
+    });
+    if (!ok) return;
+
     setConfig((prev) => ({
       ...prev,
       heroSlides: prev.heroSlides.filter((_, idx) => idx !== index),
     }));
+    showToast("Hero slide removed from draft", "info");
   };
 
   return (
@@ -550,14 +562,6 @@ export default function HomepageCMSStudio() {
               />
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Floating Notification Toast */}
-      {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>{notification}</span>
         </div>
       )}
     </div>

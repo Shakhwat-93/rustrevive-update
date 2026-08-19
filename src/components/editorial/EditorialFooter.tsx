@@ -84,7 +84,7 @@ export function EditorialFooter() {
 
         {/* Bottom Minimal Copyright */}
         <div className="pt-6 border-t border-[#ded7c8] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono-meta uppercase tracking-wider text-[#8c8577]">
-          <p>&copy; {new Date().getFullYear()} Rust &amp; Revive</p>
+          <p suppressHydrationWarning>© {new Date().getFullYear()} Rust &amp; Revive</p>
           <p>BDT (৳)</p>
         </div>
       </div>

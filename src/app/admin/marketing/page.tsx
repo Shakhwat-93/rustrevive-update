@@ -11,6 +11,7 @@ import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminCard } from "@/components/admin/ui/admin-card";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
+import { useAdminDialog } from "@/context/admin-dialog-context";
 import type { CampaignType, CampaignStatus } from "@/types/database.types";
 
 interface CampaignRow {
@@ -38,6 +39,7 @@ export default function AdminMarketingPage() {
   const [segments, setSegments] = useState<SegmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const { showToast } = useAdminDialog();
 
   const [name, setName] = useState("");
   const [type, setType] = useState<CampaignType>("PROMOTION");
@@ -82,10 +84,13 @@ export default function AdminMarketingPage() {
       if (res.ok) {
         setShowModal(false);
         setName("");
+        showToast(`Campaign ${name} created successfully`, "success");
         await fetchMarketingData();
+      } else {
+        showToast("Failed to create campaign", "error");
       }
     } catch {
-      alert("Failed to create campaign.");
+      showToast("Failed to create campaign.", "error");
     } finally {
       setSubmitting(false);
     }

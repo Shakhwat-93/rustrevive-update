@@ -18,6 +18,7 @@ import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminCard } from "@/components/admin/ui/admin-card";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
+import { useAdminDialog } from "@/context/admin-dialog-context";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
 import type { OrderStatus, PaymentStatus, DeliveryStatus } from "@/types/database.types";
 
@@ -111,10 +112,18 @@ export default function AdminOrderDetailPage(props: PageProps) {
     fetchOrder();
   }, [fetchOrder]);
 
+  const { showToast, confirm } = useAdminDialog();
+
   const handleStatusChange = async (newStatus: OrderStatus) => {
-    if (!confirm(`Are you sure you want to transition this order to "${newStatus}"?`)) {
-      return;
-    }
+    const isDanger = newStatus === "CANCELLED";
+    const ok = await confirm({
+      title: `Transition Order to ${newStatus.replace(/_/g, " ")}?`,
+      message: `This will update the order status in real-time, log the event to the timeline, and notify the customer if configured.`,
+      confirmText: `Mark ${newStatus.replace(/_/g, " ")}`,
+      variant: isDanger ? "danger" : "primary",
+    });
+
+    if (!ok) return;
 
     try {
       setMutating(true);
@@ -130,12 +139,13 @@ export default function AdminOrderDetailPage(props: PageProps) {
 
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData?.error?.message || "Failed to update status.");
+        showToast(errData?.error?.message || "Failed to update status.", "error");
       } else {
+        showToast(`Order status updated to ${newStatus.replace(/_/g, " ")}`, "success");
         await fetchOrder();
       }
     } catch {
-      alert("Error updating order status.");
+      showToast("Error updating order status.", "error");
     } finally {
       setMutating(false);
     }
@@ -156,13 +166,13 @@ export default function AdminOrderDetailPage(props: PageProps) {
 
       const json = await res.json();
       if (!res.ok) {
-        alert(json?.error?.message || "Failed to create shipment.");
+        showToast(json?.error?.message || "Failed to create shipment.", "error");
       } else {
-        alert(`Shipment created! Tracking: ${json.data.tracking_number}`);
+        showToast(`Shipment created successfully! Tracking: ${json.data.tracking_number}`, "success");
         await fetchOrder();
       }
     } catch {
-      alert("Error creating shipment.");
+      showToast("Error creating consignment shipment.", "error");
     } finally {
       setCreatingShipment(false);
     }
@@ -247,9 +257,9 @@ export default function AdminOrderDetailPage(props: PageProps) {
           <AdminCard title={`Purchased Items (${order.order_items.length})`}>
             <div className="divide-y divide-slate-100">
               {order.order_items.map((item) => (
-                <div key={item.id} className="py-3.5 first:pt-0 flex items-center justify-between">
-                  <div className="flex items-center space-x-3.5">
-                    <div className="w-14 h-16 bg-slate-50 border border-slate-200 relative overflow-hidden rounded flex-shrink-0">
+                <div key={item.id} className="py-3.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-12 h-14 sm:w-14 sm:h-16 bg-slate-50 border border-slate-200 relative overflow-hidden rounded-lg flex-shrink-0">
                       {item.image_url_snapshot ? (
                         <Image
                           src={item.image_url_snapshot}
@@ -265,8 +275,8 @@ export default function AdminOrderDetailPage(props: PageProps) {
                       )}
                     </div>
 
-                    <div>
-                      <h4 className="text-xs font-semibold text-slate-800">
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-semibold text-slate-800 truncate">
                         {item.product_title_snapshot}
                       </h4>
                       {item.variant_title_snapshot && (
@@ -280,9 +290,12 @@ export default function AdminOrderDetailPage(props: PageProps) {
                     </div>
                   </div>
 
-                  <span className="font-mono text-xs font-semibold text-slate-900">
-                    ৳{item.line_total.toLocaleString()}
-                  </span>
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                    <span className="text-[11px] font-mono text-slate-400 sm:hidden">Line Total:</span>
+                    <span className="font-mono text-xs font-bold text-slate-900">
+                      ৳{item.line_total.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

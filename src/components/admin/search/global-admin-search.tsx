@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -8,43 +8,24 @@ import {
   ShoppingCart,
   Users,
   LayoutTemplate,
-  Sliders,
   ArrowRight,
   X,
+  Loader2,
 } from "lucide-react";
 
-interface SearchItem {
+interface SearchResultItem {
   id: string;
   title: string;
-  category: "Products" | "Orders" | "Customers" | "Content" | "Settings";
-  subtitle?: string;
+  category: "Products" | "Orders" | "Customers" | "Navigation";
+  subtitle: string;
   href: string;
-  icon: React.ElementType;
 }
-
-const SEARCH_DATABASE: SearchItem[] = [
-  // Products
-  { id: "p1", title: "Wide Leg Pleated Sweatpants", category: "Products", subtitle: "SKU: RR-PNT-001 • ৳6,960", href: "/admin/products", icon: Package },
-  { id: "p2", title: "FB Sister Unisex Baggy Raw Denim", category: "Products", subtitle: "SKU: RR-DNM-002 • ৳10,560", href: "/admin/products", icon: Package },
-  { id: "p3", title: "Vintage Washed Leather Aviator Jacket", category: "Products", subtitle: "SKU: RR-JKT-003 • ৳22,200", href: "/admin/products", icon: Package },
-  { id: "p4", title: "280GSM Heavyweight Boxy Cut Tee", category: "Products", subtitle: "SKU: RR-TEE-004 • ৳4,560", href: "/admin/products", icon: Package },
-  // Content / CMS
-  { id: "c1", title: "Homepage CMS Studio", category: "Content", subtitle: "Hero slides, section ordering, text & CTAs", href: "/admin/content/homepage", icon: LayoutTemplate },
-  { id: "c2", title: "Hero Carousel Manager", category: "Content", subtitle: "Edit 35mm campaign slides and buttons", href: "/admin/content/homepage", icon: LayoutTemplate },
-  { id: "c3", title: "Media Library (Cloudflare R2)", category: "Content", subtitle: "Direct image uploads & CDN assets", href: "/admin/media", icon: LayoutTemplate },
-  // Orders
-  { id: "o1", title: "Order #RR-1025", category: "Orders", subtitle: "Tanvir Ahmed • ৳17,520 • Paid / Shipped", href: "/admin/orders", icon: ShoppingCart },
-  { id: "o2", title: "Order #RR-1024", category: "Orders", subtitle: "Nafis Fuad • ৳4,560 • Cash on Delivery", href: "/admin/orders", icon: ShoppingCart },
-  // Customers
-  { id: "cu1", title: "Tanvir Ahmed", category: "Customers", subtitle: "tanvir@example.com • 3 orders", href: "/admin/customers", icon: Users },
-  { id: "cu2", title: "Zarin Tasnim", category: "Customers", subtitle: "zarin@example.com • 5 orders", href: "/admin/customers", icon: Users },
-  // Settings
-  { id: "s1", title: "Audit Logs & Security", category: "Settings", subtitle: "View staff activity, price edits, role changes", href: "/admin/settings/audit-logs", icon: Sliders },
-];
 
 export function GlobalAdminSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResultItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
 
@@ -64,31 +45,62 @@ export function GlobalAdminSearch() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  const filteredResults = SEARCH_DATABASE.filter((item) => {
-    if (!query) return true;
-    return (
-      item.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.subtitle?.toLowerCase().includes(query.toLowerCase()) ||
-      item.category.toLowerCase().includes(query.toLowerCase())
-    );
-  }).slice(0, 8);
+  // Dynamic Database Search
+  const performSearch = useCallback(async (q: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/admin/search?q=${encodeURIComponent(q)}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setResults(json.data.results || []);
+      }
+    } catch (err) {
+      console.error("Search query error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleSelect = (item: SearchItem) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      performSearch(query);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [query, isOpen, performSearch]);
+
+  const handleSelect = (item: SearchResultItem) => {
     setIsOpen(false);
     setQuery("");
     router.push(item.href);
   };
 
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "Products":
+        return Package;
+      case "Orders":
+        return ShoppingCart;
+      case "Customers":
+        return Users;
+      default:
+        return LayoutTemplate;
+    }
+  };
+
   return (
     <>
-      {/* Search Input Trigger in Header */}
+      {/* Search Input Trigger in Header: Icon button on mobile (<sm), full bar on >=sm */}
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200/70 text-slate-500 text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer w-48 sm:w-64"
+        className="flex items-center justify-center sm:justify-start space-x-2 bg-transparent sm:bg-slate-100 hover:bg-slate-100 sm:hover:bg-slate-200/70 text-slate-500 hover:text-slate-900 text-xs p-2 sm:px-3 sm:py-1.5 rounded-lg transition-colors cursor-pointer w-9 h-9 sm:w-56 md:w-64 shrink-0"
+        aria-label="Search admin (Cmd+K)"
+        title="Search admin (Cmd+K)"
       >
-        <Search className="w-3.5 h-3.5" />
-        <span className="flex-1 text-left">Search admin...</span>
-        <kbd className="hidden sm:inline-block px-1.5 py-0.5 bg-white border border-slate-200 text-[10px] rounded-md font-mono text-slate-400">
+        <Search className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" />
+        <span className="hidden sm:inline flex-1 text-left truncate">Search admin...</span>
+        <kbd className="hidden md:inline-block px-1.5 py-0.5 bg-white border border-slate-200 text-[10px] rounded-md font-mono text-slate-400">
           ⌘K
         </kbd>
       </button>
@@ -104,7 +116,11 @@ export function GlobalAdminSearch() {
           <div className="relative w-full max-w-xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
             {/* Search Bar Input */}
             <div className="p-3 border-b border-slate-100 flex items-center">
-              <Search className="w-4 h-4 text-slate-400 mr-2.5 ml-1" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 text-slate-400 mr-2.5 ml-1 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4 text-slate-400 mr-2.5 ml-1" />
+              )}
               <input
                 type="text"
                 value={query}
@@ -112,7 +128,7 @@ export function GlobalAdminSearch() {
                   setQuery(e.target.value);
                   setSelectedIndex(0);
                 }}
-                placeholder="Type to search products, orders, customers, or CMS..."
+                placeholder="Search products, orders, customers, or admin modules..."
                 className="w-full text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
                 autoFocus
               />
@@ -126,13 +142,13 @@ export function GlobalAdminSearch() {
 
             {/* Search Results List */}
             <div className="max-h-80 overflow-y-auto p-2 divide-y divide-slate-50">
-              {filteredResults.length === 0 ? (
+              {results.length === 0 && !loading ? (
                 <div className="p-8 text-center text-xs text-slate-400">
-                  No matching admin records found for &quot;{query}&quot;
+                  {query ? `No matching records found for "${query}"` : "Type to search across store records..."}
                 </div>
               ) : (
-                filteredResults.map((item, idx) => {
-                  const Icon = item.icon;
+                results.map((item, idx) => {
+                  const Icon = getCategoryIcon(item.category);
                   const isSelected = selectedIndex === idx;
 
                   return (
@@ -141,28 +157,30 @@ export function GlobalAdminSearch() {
                       onClick={() => handleSelect(item)}
                       onMouseEnter={() => setSelectedIndex(idx)}
                       className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${
-                        isSelected ? "bg-slate-50 text-slate-900" : "text-slate-700"
+                        isSelected ? "bg-slate-50 text-slate-900" : "text-slate-700 hover:bg-slate-50"
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-600 shrink-0">
                           <Icon className="w-4 h-4" />
                         </div>
-                        <div>
-                          <div className="text-xs font-medium">{item.title}</div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-xs text-slate-900 truncate">
+                            {item.title}
+                          </div>
                           {item.subtitle && (
-                            <div className="text-[11px] text-slate-400">
+                            <div className="text-[11px] text-slate-400 truncate font-mono">
                               {item.subtitle}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-slate-100 rounded-md text-slate-500">
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
                           {item.category}
                         </span>
-                        <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
                       </div>
                     </div>
                   );
@@ -170,12 +188,12 @@ export function GlobalAdminSearch() {
               )}
             </div>
 
-            {/* Footer Navigation Hints */}
-            <div className="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-4">
-              <span>Navigate with arrow keys</span>
-              <span>
-                Press <kbd className="font-mono bg-white border border-slate-200 px-1 py-0.5 rounded-xs">ESC</kbd> to exit
-              </span>
+            {/* Modal Footer Keybind Info */}
+            <div className="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span>Navigate with mouse or keyboard</span>
+              <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px]">
+                ESC to close
+              </kbd>
             </div>
           </div>
         </div>
