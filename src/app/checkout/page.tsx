@@ -250,7 +250,6 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Shakib Al Hasan"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
@@ -264,7 +263,6 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     required
-                    placeholder="017XXXXXXXX"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
@@ -277,7 +275,6 @@ export default function CheckoutPage() {
                   </label>
                   <input
                     type="email"
-                    placeholder="shakib@example.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
@@ -300,7 +297,6 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     required
-                    placeholder="House #12, Road #4, Block #B, Banani"
                     value={form.addressLine1}
                     onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
@@ -310,7 +306,7 @@ export default function CheckoutPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6B63] mb-1">
-                      City / District *
+                       City / District *
                     </label>
                     <select
                       value={form.city}
@@ -335,7 +331,6 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Gulshan"
                       value={form.area}
                       onChange={(e) => setForm({ ...form, area: e.target.value })}
                       className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
@@ -348,7 +343,6 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="1212"
                       value={form.postalCode}
                       onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
                       className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
@@ -362,7 +356,6 @@ export default function CheckoutPage() {
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="e.g. Leave package with reception or call before arriving"
                     value={form.customerNotes}
                     onChange={(e) => setForm({ ...form, customerNotes: e.target.value })}
                     className="w-full px-3.5 py-2 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors resize-none"
