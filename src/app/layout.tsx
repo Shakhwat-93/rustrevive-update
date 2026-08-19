@@ -62,9 +62,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${cormorantGaramond.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#fbf9f5] text-[#141312] selection:bg-[#9e472a] selection:text-white">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col font-sans bg-[#fbf9f5] text-[#141312] selection:bg-[#9e472a] selection:text-white"
+      >
         <CartProvider>
           {children}
           <CartDrawer />

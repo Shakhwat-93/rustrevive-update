@@ -27,6 +27,12 @@ export function EditorialHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 15) {
@@ -58,27 +64,18 @@ export function EditorialHeader() {
         }`}
       >
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-3 sm:gap-6">
-          {/* LEFT: Official Logo */}
-          <div className="flex-shrink-0 flex items-center">
-            <Logo variant="light" size="md" />
-          </div>
-
-          {/* CENTER: Desktop Horizontal Navigation */}
-          <nav className="hidden lg:flex items-center space-x-7 xl:space-x-8 whitespace-nowrap">
-            {NAV_ITEMS.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname?.startsWith(item.href);
-
+          {/* Left: Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8" aria-label="Main Navigation">
+            {NAV_ITEMS.slice(0, 5).map((item) => {
+              const isActive = pathname === item.href;
               return (
                 <Link
-                  key={item.label}
+                  key={item.href}
                   href={item.href}
-                  className={`text-[11px] font-mono-meta uppercase tracking-[0.18em] transition-colors duration-200 ${
+                  className={`text-xs font-mono uppercase tracking-[0.15em] transition-colors py-1 relative ${
                     isActive
-                      ? "text-[#9e472a] font-semibold"
-                      : "text-[#2e2c2a] hover:text-[#9e472a]"
+                      ? "text-[#141312] font-semibold after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1.5px] after:bg-[#9e472a]"
+                      : "text-[#5c574e] hover:text-[#141312]"
                   }`}
                 >
                   {item.label}
@@ -87,16 +84,29 @@ export function EditorialHeader() {
             })}
           </nav>
 
-          {/* RIGHT: Compact Utility Controls */}
-          <div className="flex items-center space-x-3.5 sm:space-x-5 text-[#141312] whitespace-nowrap flex-shrink-0">
-            {/* Search Trigger */}
+          {/* Center: Brand Wordmark */}
+          <div className="flex-1 lg:flex-initial flex justify-start lg:justify-center">
+            <Logo variant="light" size="md" />
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Search Button */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-1 text-[#2e2c2a] hover:text-[#9e472a] transition-colors cursor-pointer flex items-center"
-              aria-label="Search"
+              className="p-1 text-[#2e2c2a] hover:text-[#9e472a] transition-colors cursor-pointer"
+              aria-label="Toggle search"
             >
-              <Search className="w-[18px] h-[18px] sm:w-4 sm:h-4" />
+              <Search className="w-4 h-4" />
             </button>
+
+            {/* Track Order Link */}
+            <Link
+              href="/track-order"
+              className="hidden md:flex items-center text-[11px] font-mono uppercase tracking-wider text-[#5c574e] hover:text-[#141312] transition-colors"
+            >
+              Track
+            </Link>
 
             {/* Account (Hidden on small mobile) */}
             <Link
@@ -116,7 +126,7 @@ export function EditorialHeader() {
               <ShoppingBag className="w-[18px] h-[18px] sm:w-4 sm:h-4" />
               <span className="text-[11px] font-mono-meta uppercase tracking-wider font-semibold whitespace-nowrap">
                 <span className="hidden md:inline">BAG </span>
-                <span className="text-[#9e472a]">({itemCount})</span>
+                <span className="text-[#9e472a]">({mounted ? itemCount : 0})</span>
               </span>
             </button>
 
