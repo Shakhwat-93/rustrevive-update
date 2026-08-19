@@ -39,29 +39,20 @@ async function executeSql(sql) {
 
 async function runMigrations() {
   console.log("==================================================");
-  console.log("RUST & REVIVE — DATABASE MIGRATION RUNNER (Phase 8)");
+  console.log("RUST & REVIVE — DATABASE MIGRATION RUNNER (Phase 9)");
   console.log("==================================================");
 
-  const migrationFile = "supabase/migrations/20260819_004_phase8_commerce_expansion.sql";
-  console.log(`Applying migration: ${migrationFile}...`);
+  const migrationFile = "supabase/migrations/20260819_005_production_performance_indexes.sql";
+  console.log(`Applying performance indexes: ${migrationFile}...`);
   const sql = fs.readFileSync(migrationFile, "utf8");
 
   try {
     await executeSql(sql);
-    console.log("✅ Phase 8 Commerce Expansion Migration applied successfully!");
+    console.log("✅ Phase 9 Performance Composite Indexes applied successfully!");
 
     console.log("Notifying PostgREST to reload schema cache...");
     await executeSql("NOTIFY pgrst, 'reload schema';");
     console.log("✅ PostgREST schema cache reloaded!");
-
-    const tables = await executeSql(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name;
-    `);
-    console.log("All Public Tables in Supabase PostgreSQL:");
-    console.log(tables.map((t) => `  - ${t.table_name}`).join("\n"));
   } catch (err) {
     console.error("❌ Migration error:", err.message);
     process.exit(1);

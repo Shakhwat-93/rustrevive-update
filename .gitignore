@@ -29,6 +29,11 @@
 /coverage
 /.vitest
 
+# Database Backups & Dumps
+/backups/
+*.dump
+
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
