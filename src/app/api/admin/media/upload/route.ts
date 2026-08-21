@@ -1,22 +1,34 @@
 import { NextRequest } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { getStorageService } from "@/lib/storage/storage.service";
 import { MediaService } from "@/lib/services/media.service";
 import { generateStorageKey, sanitizeFilename } from "@/lib/storage/key-generator";
 import { successResponse, errorResponse } from "@/lib/api/response";
-import { ValidationError } from "@/lib/errors/app-error";
+import { ValidationError, StorageError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 import { convertToWebP } from "@/lib/media/image-processor";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/heic",
+  "image/tiff",
+  "image/bmp",
+];
+
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB max upload limit
+
 /**
  * POST /api/admin/media/upload
- * 1. Accepts ANY image format (PNG, JPEG, TIFF, BMP, WebP, etc.).
- * 2. Automatically converts and optimizes the image to WebP format.
- * 3. Uploads to Cloudflare R2 (with resilient local storage fallback).
- * 4. Records the media in Supabase PostgreSQL `media` table.
+ * 1. Validates file MIME type and size.
+ * 2. Automatically converts and optimizes image to WebP format.
+ * 3. Uploads directly to Cloudflare R2 bucket.
+ * 4. Confirms R2 upload before recording media in Supabase PostgreSQL.
+ * 5. Returns canonical media URL.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +40,14 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("No file provided for upload");
     }
 
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      throw new ValidationError(`File size exceeds 25MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
+    }
+
+    if (file.type && !ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+      throw new ValidationError(`Unsupported file type: ${file.type}. Allowed: JPEG, PNG, WebP, AVIF, TIFF, BMP`);
+    }
+
     const rawBuffer = Buffer.from(await file.arrayBuffer());
     const originalName = file.name;
     const baseName = originalName.replace(/\.[^/.]+$/, "");
@@ -37,40 +57,21 @@ export async function POST(request: NextRequest) {
     const { buffer: webpBuffer, mimeType, width, height, fileSize } =
       await convertToWebP(rawBuffer, { quality: 85, maxWidth: 2560 });
 
-    // 2. Generate unique storage key
+    // 2. Generate unique immutable storage key
     const storageKey = generateStorageKey("products", webpFilename);
 
-    let publicUrl = "";
-    let storageProvider = "R2";
+    // 3. Upload strictly to Cloudflare R2 bucket
+    const storage = getStorageService();
+    const storedAsset = await storage.uploadBuffer(webpBuffer, storageKey, mimeType);
 
-    // 3. Attempt upload to Cloudflare R2
-    try {
-      const storage = getStorageService();
-      const storedAsset = await storage.uploadBuffer(webpBuffer, storageKey, mimeType);
-      publicUrl = storedAsset.publicUrl;
-      storageProvider = "R2";
-    } catch (r2Error) {
-      logger.warn(
-        "Cloudflare R2 upload unavailable or failed, falling back to resilient local storage",
-        "AdminMediaUpload",
-        { key: storageKey, error: r2Error instanceof Error ? r2Error.message : String(r2Error) }
-      );
-
-      // Local storage fallback: public/uploads/{storageKey}
-      const localFilePath = path.join(process.cwd(), "public", "uploads", storageKey);
-      const localDir = path.dirname(localFilePath);
-
-      await fs.mkdir(localDir, { recursive: true });
-      await fs.writeFile(localFilePath, webpBuffer);
-
-      publicUrl = `/uploads/${storageKey}`;
-      storageProvider = "LOCAL";
+    if (!storedAsset || !storedAsset.storageKey) {
+      throw new StorageError("Cloudflare R2 upload did not return a valid asset confirmation");
     }
 
-    // 4. Register media in Supabase PostgreSQL
+    // 4. Register confirmed media in Supabase PostgreSQL
     const mediaRecord = await MediaService.registerMedia({
-      object_key: storageKey,
-      public_url: publicUrl,
+      object_key: storedAsset.storageKey,
+      public_url: storedAsset.publicUrl,
       original_filename: webpFilename,
       mime_type: mimeType,
       file_size: fileSize,
@@ -80,10 +81,10 @@ export async function POST(request: NextRequest) {
       created_by: "Admin",
     });
 
-    logger.info("Product media processed and uploaded successfully as WebP", "AdminMediaUpload", {
+    logger.info("Product media processed and uploaded to Cloudflare R2", "AdminMediaUpload", {
       id: mediaRecord.id,
-      url: mediaRecord.public_url,
-      provider: storageProvider,
+      storageKey: mediaRecord.object_key,
+      publicUrl: mediaRecord.public_url,
       originalSize: rawBuffer.length,
       webpSize: fileSize,
     });

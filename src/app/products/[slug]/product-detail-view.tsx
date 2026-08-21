@@ -16,6 +16,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useCart } from "@/context/cart-context";
+import { getMediaUrl } from "@/lib/media/media-url";
 
 interface ProductDetailViewProps {
   product: {
@@ -121,7 +122,11 @@ export function ProductDetailView({
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
-  const images = mediaList.map((m) => m.media?.public_url).filter(Boolean) as string[];
+  const images = (
+    mediaList.map((m) => getMediaUrl(m.media?.public_url)).filter(Boolean) as string[]
+  ).length > 0
+    ? (mediaList.map((m) => getMediaUrl(m.media?.public_url)).filter(Boolean) as string[])
+    : ["/placeholder-garment.webp"];
 
   const handleAddToCart = () => {
     addItem(
@@ -132,7 +137,7 @@ export function ProductDetailView({
         variantTitle: activeVariant?.title,
         sku: currentSku,
         price: currentPrice,
-        imageUrl: images[selectedImageIndex] || primaryMedia?.media?.public_url,
+        imageUrl: images[selectedImageIndex] || getMediaUrl(primaryMedia?.media?.public_url),
       },
       quantity
     );

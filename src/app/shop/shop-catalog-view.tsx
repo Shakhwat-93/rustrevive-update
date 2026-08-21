@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { SlidersHorizontal, ArrowUpDown, Plus, Check } from "lucide-react";
 import { useCart } from "@/context/cart-context";
+import { getMediaUrl } from "@/lib/media/media-url";
 
 interface ProductRecord {
   id: string;
@@ -198,23 +199,17 @@ export function ShopCatalogView({
                   href={`/products/${product.slug}`}
                   className="relative aspect-[3/4] w-full overflow-hidden bg-[#f4eee3] border border-[#ded7c8] transition-colors"
                 >
-                  {primaryImg?.media?.public_url ? (
-                    <Image
-                      src={primaryImg.media.public_url}
-                      alt={primaryImg.media.alt_text || product.title}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center font-mono-meta text-xs text-[#8c8577]">
-                      RUST &amp; REVIVE
-                    </div>
-                  )}
+                  <Image
+                    src={getMediaUrl(primaryImg?.media?.public_url)}
+                    alt={primaryImg?.media?.alt_text || product.title}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
+                  />
 
                   {secondaryImg?.media?.public_url && (
                     <Image
-                      src={secondaryImg.media.public_url}
+                      src={getMediaUrl(secondaryImg.media.public_url)}
                       alt={product.title}
                       fill
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

@@ -12,6 +12,7 @@ import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminEmptyState } from "@/components/admin/ui/admin-empty-state";
 import { TableSkeleton } from "@/components/admin/ui/admin-skeleton";
 import { useAdminDialog } from "@/context/admin-dialog-context";
+import { getMediaUrl } from "@/lib/media/media-url";
 
 interface AdminProductRow {
   id: string;
@@ -80,7 +81,7 @@ export default function AdminProductsPage() {
             compareAtPrice: p.compare_at_price,
             inventory: totalInv,
             status: p.status.toLowerCase() as "active" | "draft" | "archived",
-            imageUrl: primaryMedia?.media?.public_url || "https://pub-90e6c63b53cb4c518fdafb3bfeb44169.r2.dev/placeholder.webp",
+            imageUrl: getMediaUrl(primaryMedia?.media?.public_url),
           };
         });
         setProducts(mapped);

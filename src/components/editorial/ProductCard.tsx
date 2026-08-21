@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getMediaUrl } from "@/lib/media/media-url";
 import type { ProductItem } from "@/data/homepage.data";
 
 interface ProductCardProps {
@@ -13,6 +14,9 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const mainImageUrl = getMediaUrl(product.imageUrl);
+  const hoverImg = product.hoverImageUrl ? getMediaUrl(product.hoverImageUrl) : null;
 
   const formattedPrice = `৳${(product.priceCents * 1.2).toLocaleString("en-US", {
     maximumFractionDigits: 0,
@@ -35,18 +39,18 @@ export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
         className="relative aspect-[3/4] w-full overflow-hidden bg-[#f4eee3] border border-[#ded7c8] transition-colors"
       >
         <Image
-          src={product.imageUrl}
-          alt={product.imageAlt}
+          src={mainImageUrl}
+          alt={product.imageAlt || product.title}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className={`object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] ${
-            isHovered && product.hoverImageUrl ? "opacity-0" : "opacity-100"
+            isHovered && hoverImg ? "opacity-0" : "opacity-100"
           }`}
         />
 
-        {product.hoverImageUrl && (
+        {hoverImg && (
           <Image
-            src={product.hoverImageUrl}
+            src={hoverImg}
             alt={product.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

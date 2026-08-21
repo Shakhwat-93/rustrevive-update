@@ -18,6 +18,7 @@ export function getStorageService(): IStorageService {
 
   storageServiceInstance = new R2StorageProvider({
     accountId: env.R2_ACCOUNT_ID,
+    apiToken: env.CLOUDFLARE_API_TOKEN,
     accessKeyId: env.R2_ACCESS_KEY_ID,
     secretAccessKey: env.R2_SECRET_ACCESS_KEY,
     bucketName: env.R2_BUCKET_NAME,

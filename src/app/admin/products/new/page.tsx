@@ -16,6 +16,7 @@ import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminCard } from "@/components/admin/ui/admin-card";
 import { useAdminDialog } from "@/context/admin-dialog-context";
+import { getMediaUrl } from "@/lib/media/media-url";
 
 interface CategoryItem {
   id: string;
@@ -521,11 +522,10 @@ export default function NewProductPage() {
                       }`}
                     >
                       <Image
-                        src={img.url}
+                        src={getMediaUrl(img.url)}
                         alt={img.altText || "Product photo"}
                         fill
                         className="object-cover object-center"
-                        unoptimized
                       />
 
                       {/* Primary Badge */}

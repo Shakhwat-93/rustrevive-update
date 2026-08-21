@@ -8,6 +8,7 @@ import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminEmptyState } from "@/components/admin/ui/admin-empty-state";
 import { TableSkeleton } from "@/components/admin/ui/admin-skeleton";
 import { useAdminDialog } from "@/context/admin-dialog-context";
+import { getMediaUrl } from "@/lib/media/media-url";
 
 interface MediaItem {
   id: string;
@@ -157,12 +158,11 @@ export default function AdminMediaPage() {
             >
               <div className="relative aspect-3/4 bg-slate-100 overflow-hidden">
                 <Image
-                  src={item.public_url}
+                  src={getMediaUrl(item.public_url)}
                   alt={item.original_filename || "Media"}
                   fill
                   sizes="(max-width: 768px) 50vw, 20vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  unoptimized
                 />
               </div>
 

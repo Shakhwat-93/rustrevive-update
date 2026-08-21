@@ -5,8 +5,8 @@ const cspHeader = `
   script-src 'self' 'unsafe-eval' 'unsafe-inline';
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com data:;
-  img-src 'self' blob: data: https://pub-90e6c63b53cb4c518fdafb3bfeb44169.r2.dev https://media.rustrevive.store https://images.unsplash.com;
-  connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 http://supabasekong-n95ugz0lqx76mpheb0sxaaa2.187.127.218.211.sslip.io https://*.r2.cloudflarestorage.com;
+  img-src 'self' blob: data: https://pub-90e6c63b53cb4c518fdafb3bfeb44169.r2.dev https://media.rustrevive.store https://rustrevive.store https://rustrevive.com https://images.unsplash.com;
+  connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://rustrevive.store https://rustrevive.com http://supabasekong-n95ugz0lqx76mpheb0sxaaa2.187.127.218.211.sslip.io https://*.r2.cloudflarestorage.com https://api.cloudflare.com;
   frame-ancestors 'self';
   form-action 'self';
   base-uri 'self';
@@ -63,6 +63,16 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "media.rustrevive.store",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "rustrevive.store",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "rustrevive.com",
         pathname: "/**",
       },
       {
