@@ -200,19 +200,19 @@ export function ProductDetailView({
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 space-y-16">
-      {/* 1. Main PDP Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
-        {/* Left Column: Image Gallery (7 Cols) */}
-        <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-4">
+    <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+      {/* 1. Main PDP Two-Column Balanced Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* Left Column: Image Gallery (6 Cols with constrained height) */}
+        <div className="lg:col-span-6 flex flex-col-reverse sm:flex-row gap-3.5 sm:gap-4">
           {/* Thumbnails */}
           {images.length > 1 && (
-            <div className="flex sm:flex-col gap-3 overflow-x-auto sm:overflow-y-auto sm:w-20 shrink-0 scrollbar-none">
+            <div className="flex sm:flex-col gap-2.5 overflow-x-auto sm:overflow-y-auto sm:w-16 lg:w-20 shrink-0 scrollbar-none">
               {images.map((imgUrl, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`relative aspect-[3/4] w-16 sm:w-20 overflow-hidden bg-[#f4eee3] border transition-all cursor-pointer ${
+                  className={`relative aspect-[3/4] w-14 sm:w-16 lg:w-20 overflow-hidden bg-[#f4eee3] border transition-all cursor-pointer ${
                     selectedImageIndex === idx ? "border-[#141312] ring-1 ring-[#141312]" : "border-[#ded7c8] opacity-70 hover:opacity-100"
                   }`}
                 >
@@ -228,8 +228,8 @@ export function ProductDetailView({
             </div>
           )}
 
-          {/* Primary Main Image Frame */}
-          <div className="relative aspect-[3/4] w-full bg-[#f4eee3] border border-[#ded7c8] overflow-hidden">
+          {/* Primary Main Image Frame - Constrained to 580px-620px max height */}
+          <div className="relative w-full aspect-[4/5] max-h-[520px] sm:max-h-[580px] lg:max-h-[620px] bg-[#f4eee3] border border-[#ded7c8] overflow-hidden flex items-center justify-center">
             {images[selectedImageIndex] ? (
               <Image
                 src={images[selectedImageIndex]}
@@ -237,7 +237,7 @@ export function ProductDetailView({
                 fill
                 priority
                 className="object-cover object-center"
-                sizes="(max-width: 1024px) 100vw, 55vw"
+                sizes="(max-width: 1024px) 100vw, 50vw"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center font-mono-meta text-xs text-[#8c8577]">
@@ -253,8 +253,8 @@ export function ProductDetailView({
           </div>
         </div>
 
-        {/* Right Column: Garment Information & Purchase Controls (5 Cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        {/* Right Column: Garment Information & Sticky Purchase Controls (6 Cols) */}
+        <div className="lg:col-span-6 space-y-6 lg:sticky lg:top-28">
           {/* Title & SKU */}
           <div className="space-y-1.5 border-b border-[#ded7c8] pb-4">
             <span className="text-[11px] font-mono-meta uppercase tracking-[0.2em] text-[#9e472a] font-semibold">
