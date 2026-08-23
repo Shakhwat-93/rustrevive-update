@@ -41,6 +41,14 @@ export function getDefaultHomepageConfig(): HomepageConfig {
       subtext: STATEMENT_DATA.subtext,
     },
     featuredProducts: FEATURED_PRODUCTS,
+    featuredSection: {
+      collectionType: "featured",
+      label: "OUR COLLECTION",
+      title: "Featured Products",
+      subtitle: "Explore our most popular items loved by customers",
+      mode: "manual",
+      items: [],
+    },
     brandStory: {
       headline: BRAND_STORY_DATA.headlineLine2,
       paragraph: BRAND_STORY_DATA.paragraph1,

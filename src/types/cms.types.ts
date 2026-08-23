@@ -66,6 +66,23 @@ export interface CommunityConfig {
   tiktokUrl: string;
 }
 
+export interface MerchandisingItem {
+  id: string;
+  productId: string;
+  badge?: string;
+  displayOrder: number;
+  enabled: boolean;
+}
+
+export interface FeaturedProductsSectionConfig {
+  collectionType: "featured" | "new_arrivals" | "best_sellers" | "trending";
+  label: string;
+  title: string;
+  subtitle: string;
+  mode: "manual" | "automatic";
+  items: MerchandisingItem[];
+}
+
 export interface HomepageConfig {
   version: number;
   status: CMSStatus;
@@ -76,6 +93,7 @@ export interface HomepageConfig {
   collections: CollectionItem[];
   statement: StatementConfig;
   featuredProducts: ProductItem[];
+  featuredSection?: FeaturedProductsSectionConfig;
   brandStory: BrandStoryConfig;
   lookbook: LookbookItem[];
   categoryExplorer: CategoryExplorerItem[];
