@@ -13,6 +13,7 @@ import { EverydayEssentials } from "@/components/editorial/EverydayEssentials";
 import { TrustGrid } from "@/components/editorial/TrustGrid";
 import { CommunitySection } from "@/components/editorial/CommunitySection";
 import { EditorialFooter } from "@/components/editorial/EditorialFooter";
+import { getMediaUrl } from "@/lib/media/media-url";
 import type { ProductItem } from "@/data/homepage.data";
 
 export const dynamic = "force-dynamic";
@@ -90,9 +91,10 @@ export default async function HomePage() {
         isPrimary: pm.is_primary,
       })) || [];
 
-    const primary =
-      mediaList.find((m) => m.isPrimary)?.url || mediaList[0]?.url || "/placeholder-garment.webp";
-    const secondary = mediaList[1]?.url || primary;
+    const primary = getMediaUrl(
+      mediaList.find((m) => m.isPrimary)?.url || mediaList[0]?.url
+    );
+    const secondary = getMediaUrl(mediaList[1]?.url || primary);
 
     return {
       id: p.id,

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight } from "lucide-react";
+import { getMediaUrl } from "@/lib/media/media-url";
 
 interface SearchProduct {
   id: string;
@@ -112,19 +113,13 @@ export function SearchView({ initialQuery, initialResults }: SearchViewProps) {
                     className="group flex flex-col w-full"
                   >
                     <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f4eee3] border border-[#ded7c8]">
-                      {primaryImg?.media?.public_url ? (
-                        <Image
-                          src={primaryImg.media.public_url}
-                          alt={product.title}
-                          fill
-                          sizes="(max-width: 640px) 50vw, 33vw"
-                          className="object-cover object-center group-hover:scale-[1.03] transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-mono-meta text-xs text-[#8c8577]">
-                          RUST &amp; REVIVE
-                        </div>
-                      )}
+                      <Image
+                        src={getMediaUrl(primaryImg?.media?.public_url)}
+                        alt={primaryImg?.media?.alt_text || product.title}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                        className="object-cover object-center group-hover:scale-[1.03] transition-transform duration-500"
+                      />
                     </div>
                     <div className="pt-2.5 space-y-1">
                       <h3 className="font-serif text-sm uppercase tracking-tight text-[#141312] group-hover:text-[#9e472a] transition-colors line-clamp-1">
