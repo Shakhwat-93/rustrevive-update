@@ -3,16 +3,18 @@
 import React, { useState } from "react";
 import { SectionHeader } from "@/components/ui/section-header";
 import { ProductCard } from "@/components/editorial/ProductCard";
-import { ESSENTIALS_PRODUCTS, type ProductItem } from "@/data/homepage.data";
+import type { ProductItem } from "@/data/homepage.data";
 
 interface EverydayEssentialsProps {
   products?: ProductItem[];
 }
 
-export function EverydayEssentials({ products }: EverydayEssentialsProps) {
+export function EverydayEssentials({ products = [] }: EverydayEssentialsProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const displayList = products && products.length > 0 ? products : ESSENTIALS_PRODUCTS;
+  if (!products || products.length === 0) {
+    return null;
+  }
 
   const handleQuickAdd = (product: ProductItem) => {
     setToastMessage(`Added "${product.title}" to bag.`);
@@ -31,7 +33,7 @@ export function EverydayEssentials({ products }: EverydayEssentialsProps) {
 
         {/* 4-Column Desktop / 2-Column Mobile Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          {displayList.slice(0, 4).map((product) => (
+          {products.slice(0, 4).map((product) => (
             <ProductCard
               key={`essentials-${product.id}`}
               product={product}

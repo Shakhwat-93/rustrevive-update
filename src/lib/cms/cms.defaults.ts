@@ -3,12 +3,10 @@ import {
   HERO_SLIDES,
   COLLECTIONS_DATA,
   STATEMENT_DATA,
-  FEATURED_PRODUCTS,
   BRAND_STORY_DATA,
   LOOKBOOK_DATA,
   CATEGORY_EXPLORER_DATA,
   MANIFESTO_DATA,
-  ESSENTIALS_PRODUCTS,
 } from "@/data/homepage.data";
 
 export const DEFAULT_HOMEPAGE_SECTIONS = [
@@ -40,7 +38,7 @@ export function getDefaultHomepageConfig(): HomepageConfig {
       headlineLine3: STATEMENT_DATA.headlineLine3,
       subtext: STATEMENT_DATA.subtext,
     },
-    featuredProducts: FEATURED_PRODUCTS,
+    featuredProducts: [],
     featuredSection: {
       collectionType: "featured",
       label: "OUR COLLECTION",
@@ -63,7 +61,7 @@ export function getDefaultHomepageConfig(): HomepageConfig {
       quoteLine2: MANIFESTO_DATA.quoteLine2,
       quoteLine3: MANIFESTO_DATA.quoteLine3,
     },
-    everydayEssentials: ESSENTIALS_PRODUCTS,
+    everydayEssentials: [],
     community: {
       headline: "STAY IN THE LOOP",
       supportingText: "Sign up for private sales, lookbook drops, and special editorial dispatches.",

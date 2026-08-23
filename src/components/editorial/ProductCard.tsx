@@ -18,11 +18,11 @@ export function ProductCard({ product, onQuickAdd }: ProductCardProps) {
   const mainImageUrl = getMediaUrl(product.imageUrl);
   const hoverImg = product.hoverImageUrl ? getMediaUrl(product.hoverImageUrl) : null;
 
-  const formattedPrice = `৳${(product.priceCents * 1.2).toLocaleString("en-US", {
+  const formattedPrice = `৳${product.priceCents.toLocaleString("en-US", {
     maximumFractionDigits: 0,
   })}`;
   const formattedComparePrice = product.compareAtPriceCents
-    ? `৳${(product.compareAtPriceCents * 1.2).toLocaleString("en-US", {
+    ? `৳${product.compareAtPriceCents.toLocaleString("en-US", {
         maximumFractionDigits: 0,
       })}`
     : null;

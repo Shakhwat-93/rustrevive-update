@@ -172,114 +172,9 @@ export const STATEMENT_DATA = {
 };
 
 // -----------------------------------------------------------------------------
-// FEATURED PRODUCTS
+// FEATURED PRODUCTS (Loaded dynamically from Supabase)
 // -----------------------------------------------------------------------------
-export const FEATURED_PRODUCTS: ProductItem[] = [
-  {
-    id: "prod-1",
-    title: "Wide Leg Pleated Sweatpants",
-    slug: "wide-leg-pleated-sweatpants",
-    category: "Pants",
-    colorName: "Charcoal",
-    priceCents: 5800,
-    compareAtPriceCents: 6800,
-    currency: "BDT",
-    isSale: true,
-    imageUrl: "https://images.unsplash.com/photo-1584865288642-42078afe6942?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive Wide Leg Pleated Sweatpants",
-  },
-  {
-    id: "prod-2",
-    title: "FB Sister Unisex Baggy Jeans",
-    slug: "fb-sister-unisex-baggy-raw-denim-jeans",
-    category: "Pants",
-    colorName: "Raw Indigo",
-    priceCents: 8800,
-    currency: "BDT",
-    isNew: true,
-    imageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive FB Sister Unisex Baggy Raw Denim Jeans",
-  },
-  {
-    id: "prod-3",
-    title: "Vintage Washed Aviator Jacket",
-    slug: "vintage-washed-leather-aviator-jacket",
-    category: "Jackets",
-    colorName: "Cognac",
-    priceCents: 18500,
-    compareAtPriceCents: 21000,
-    currency: "BDT",
-    isSale: true,
-    imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1520975954732-35dd22299614?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive Vintage Washed Leather Aviator Jacket",
-  },
-  {
-    id: "prod-4",
-    title: "280GSM Heavyweight Boxy Tee",
-    slug: "280gsm-heavyweight-boxy-cut-tee",
-    category: "T-Shirts",
-    colorName: "Faded Rust",
-    priceCents: 3800,
-    currency: "BDT",
-    isNew: true,
-    imageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive 280GSM Heavyweight Boxy Cut Tee",
-  },
-  {
-    id: "prod-5",
-    title: "Vegetable Tanned Leather Belt",
-    slug: "vegetable-tanned-solid-brass-buckle-belt",
-    category: "Belts",
-    colorName: "Saddle Brown",
-    priceCents: 4500,
-    currency: "BDT",
-    imageUrl: "https://images.unsplash.com/photo-1624222247344-550fb60583dc?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive Vegetable Tanned Solid Brass Buckle Belt",
-  },
-  {
-    id: "prod-6",
-    title: "Wool Chore Overshirt",
-    slug: "relaxed-fit-herringbone-wool-chore-overshirt",
-    category: "Jackets",
-    colorName: "Olive Taupe",
-    priceCents: 11000,
-    compareAtPriceCents: 12500,
-    currency: "BDT",
-    imageUrl: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive Relaxed Fit Herringbone Wool Chore Overshirt",
-  },
-  {
-    id: "prod-7",
-    title: "Carpenter Canvas Pants",
-    slug: "classic-carpenter-canvas-utility-pants",
-    category: "Pants",
-    colorName: "Bone",
-    priceCents: 7400,
-    currency: "BDT",
-    isNew: true,
-    imageUrl: "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive Classic Carpenter Canvas Utility Pants",
-  },
-  {
-    id: "prod-8",
-    title: "8-Wale Corduroy Overshirt",
-    slug: "washed-8-wale-corduroy-overshirt",
-    category: "Jackets",
-    colorName: "Terracotta",
-    priceCents: 9500,
-    currency: "BDT",
-    imageUrl: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=1000&auto=format&fit=crop",
-    hoverImageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=1000&auto=format&fit=crop",
-    imageAlt: "Rust & Revive Washed 8-Wale Corduroy Overshirt",
-  },
-];
+export const FEATURED_PRODUCTS: ProductItem[] = [];
 
 // -----------------------------------------------------------------------------
 // BRAND STORY DATA
@@ -359,11 +254,6 @@ export const MANIFESTO_DATA = {
 };
 
 // -----------------------------------------------------------------------------
-// EVERYDAY ESSENTIALS
+// EVERYDAY ESSENTIALS (Loaded dynamically from Supabase)
 // -----------------------------------------------------------------------------
-export const ESSENTIALS_PRODUCTS: ProductItem[] = [
-  FEATURED_PRODUCTS[0]!,
-  FEATURED_PRODUCTS[1]!,
-  FEATURED_PRODUCTS[2]!,
-  FEATURED_PRODUCTS[3]!,
-];
+export const ESSENTIALS_PRODUCTS: ProductItem[] = [];
