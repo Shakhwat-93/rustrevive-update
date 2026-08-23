@@ -52,6 +52,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  serverExternalPackages: ["sharp"],
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
