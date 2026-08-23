@@ -1,85 +1,258 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Save, Sparkles, Plus, Trash2, CheckCircle2 } from "lucide-react";
-import { FEATURED_PRODUCTS } from "@/data/homepage.data";
+import {
+  ArrowLeft,
+  Save,
+  UploadCloud,
+  CheckCircle2,
+  Trash2,
+  Star,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { getMediaUrl } from "@/lib/media/media-url";
+
+interface ProductImage {
+  id?: string;
+  url: string;
+  altText: string;
+  isPrimary: boolean;
+}
 
 export default function EditProductPage() {
   const params = useParams();
   const router = useRouter();
   const productId = params["id"] as string;
 
-  const existingProduct = FEATURED_PRODUCTS.find((p) => p.id === productId) || FEATURED_PRODUCTS[0]!;
-
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [notification, setNotification] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [notification, setNotification] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   // Form State
-  const [title, setTitle] = useState(existingProduct.title);
-  const [description, setDescription] = useState(
-    "Heavyweight Japanese mill raw denim pants engineered for daily wear and natural fading patina."
-  );
-  const [category, setCategory] = useState(existingProduct.category);
-  const [status, setStatus] = useState<"active" | "draft" | "archived">("active");
-  const [tags, setTags] = useState("raw, selvedge, vintage, heavy");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [status, setStatus] = useState<"ACTIVE" | "DRAFT" | "ARCHIVED">("ACTIVE");
+  const [sku, setSku] = useState("");
+  const [price, setPrice] = useState<number | "">("");
+  const [compareAtPrice, setCompareAtPrice] = useState<number | "">("");
+  const [costPrice, setCostPrice] = useState<number | "">("");
+  const [images, setImages] = useState<ProductImage[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
 
-  // Pricing State
-  const [price, setPrice] = useState<number | "">(Math.round(existingProduct.priceCents * 1.2));
-  const [compareAtPrice, setCompareAtPrice] = useState<number | "">(
-    existingProduct.compareAtPriceCents ? Math.round(existingProduct.compareAtPriceCents * 1.2) : ""
-  );
-  const [costPerItem, setCostPerItem] = useState<number | "">(3200);
+  const showToast = (msg: string, type: "success" | "error" = "success") => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
-  // Inventory State
-  const [sku, setSku] = useState(`RR-${category.slice(0, 3).toUpperCase()}-001`);
-  const [barcode, setBarcode] = useState("880923849102");
-  const [trackInventory, setTrackInventory] = useState(true);
-  const [quantity, setQuantity] = useState(24);
+  // 1. Fetch Real Product from API
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        setIsLoading(true);
+        const res = await fetch(`/api/admin/products/${productId}`);
+        const json = await res.json();
 
-  // Media
-  const [imageUrl, setImageUrl] = useState(existingProduct.imageUrl);
+        if (!res.ok || !json.success || !json.data) {
+          throw new Error(json.error?.message || "Failed to load product details");
+        }
 
-  // Variants State
-  const [variants, setVariants] = useState<{ size: string; color: string; price: number; stock: number }[]>([
-    { size: "S", color: "Raw Indigo", price: Math.round(existingProduct.priceCents * 1.2), stock: 6 },
-    { size: "M", color: "Raw Indigo", price: Math.round(existingProduct.priceCents * 1.2), stock: 10 },
-    { size: "L", color: "Raw Indigo", price: Math.round(existingProduct.priceCents * 1.2), stock: 6 },
-    { size: "XL", color: "Raw Indigo", price: Math.round(existingProduct.priceCents * 1.2), stock: 2 },
-  ]);
+        const p = json.data;
+        setTitle(p.title || "");
+        setDescription(p.description || "");
+        setShortDescription(p.short_description || "");
+        setStatus(p.status || "ACTIVE");
+        setSku(p.sku || "");
+        setPrice(p.base_price || 0);
+        setCompareAtPrice(p.compare_at_price || "");
+        setCostPrice(p.cost_price || "");
+
+        // Map Media
+        const mappedImages: ProductImage[] = (p.product_media || []).map((pm: {
+          id: string;
+          media_id: string;
+          is_primary: boolean;
+          media?: { id: string; public_url: string; alt_text: string };
+        }) => ({
+          id: pm.media?.id || pm.media_id,
+          url: pm.media?.public_url || "/placeholder-garment.webp",
+          altText: pm.media?.alt_text || p.title,
+          isPrimary: pm.is_primary,
+        }));
+
+        setImages(mappedImages);
+      } catch (err: unknown) {
+        showToast(err instanceof Error ? err.message : "Failed to load product", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (productId) {
+      loadProduct();
+    }
+  }, [productId]);
 
   const { profit, margin } = useMemo(() => {
     const numPrice = Number(price) || 0;
-    const numCost = Number(costPerItem) || 0;
+    const numCost = Number(costPrice) || 0;
     if (numPrice <= 0) return { profit: 0, margin: 0 };
     const p = numPrice - numCost;
     const m = Math.round((p / numPrice) * 100);
     return { profit: p, margin: m };
-  }, [price, costPerItem]);
+  }, [price, costPrice]);
 
-  const handleSave = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setNotification("Product changes updated successfully!");
-      setTimeout(() => router.push("/admin/products"), 1500);
-    }, 600);
+  // Handle Automatic WebP File Upload to Cloudflare R2
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("alt_text", title || file.name);
+
+      const res = await fetch("/api/admin/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "Upload failed");
+      }
+
+      const media = json.data;
+      setImages((prev) => {
+        const isFirst = prev.length === 0;
+        return [
+          ...prev,
+          {
+            id: media.id,
+            url: media.public_url,
+            altText: media.original_filename,
+            isPrimary: isFirst,
+          },
+        ];
+      });
+      showToast("Image automatically converted to WebP and uploaded to R2!");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to upload image", "error");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
-  const handleAddVariant = () => {
-    setVariants((prev) => [
+  // Add Manual Image URL
+  const handleAddImageUrl = () => {
+    const trimmed = imageUrlInput.trim();
+    if (!trimmed) return;
+
+    setImages((prev) => [
       ...prev,
-      { size: "M", color: "New Color", price: Number(price) || 5000, stock: 5 },
+      {
+        url: trimmed,
+        altText: title || "Product image",
+        isPrimary: prev.length === 0,
+      },
     ]);
+    setImageUrlInput("");
   };
 
-  const handleDeleteVariant = (idx: number) => {
-    setVariants((prev) => prev.filter((_, i) => i !== idx));
+  // Set Primary Image
+  const handleSetPrimary = (index: number) => {
+    setImages((prev) =>
+      prev.map((img, i) => ({
+        ...img,
+        isPrimary: i === index,
+      }))
+    );
   };
+
+  // Delete Image
+  const handleDeleteImage = (index: number) => {
+    setImages((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length > 0 && !next.some((img) => img.isPrimary) && next[0]) {
+        next[0].isPrimary = true;
+      }
+      return next;
+    });
+  };
+
+  // Save Updates
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const mediaIds = images.map((img) => img.id).filter(Boolean) as string[];
+
+      const payload = {
+        title,
+        description,
+        short_description: shortDescription,
+        status,
+        sku,
+        base_price: Number(price) || 0,
+        compare_at_price: compareAtPrice ? Number(compareAtPrice) : null,
+        cost_price: costPrice ? Number(costPrice) : null,
+        media_ids: mediaIds,
+      };
+
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "Failed to update product");
+      }
+
+      showToast("Product updated successfully in Supabase!");
+      setTimeout(() => router.push("/admin/products"), 1200);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to update product", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center space-x-2 text-slate-500 font-mono text-xs">
+          <Loader2 className="w-4 h-4 animate-spin text-[#9e472a]" />
+          <span>Loading Product Data...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      {/* Toast Notification */}
+      {notification && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 text-xs font-mono text-white ${
+            notification.type === "success" ? "bg-emerald-700" : "bg-rose-700"
+          }`}
+        >
+          {notification.type === "success" ? (
+            <CheckCircle2 className="w-4 h-4" />
+          ) : (
+            <AlertCircle className="w-4 h-4" />
+          )}
+          <span>{notification.msg}</span>
+        </div>
+      )}
+
       {/* Top Header Navigation */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -91,7 +264,7 @@ export default function EditProductPage() {
           </Link>
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Edit Product</h1>
-            <p className="text-xs text-slate-500">Editing SKU: {sku}</p>
+            <p className="text-xs text-slate-500 font-mono">SKU: {sku || "UNASSIGNED"}</p>
           </div>
         </div>
 
@@ -100,14 +273,15 @@ export default function EditProductPage() {
           disabled={isSaving}
           className="flex items-center space-x-1.5 bg-[#9e472a] hover:bg-[#b85433] text-white px-5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-xs disabled:opacity-50"
         >
-          <Save className="w-3.5 h-3.5" />
-          <span>{isSaving ? "Updating..." : "Update Product"}</span>
+          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          <span>{isSaving ? "Saving..." : "Save Product"}</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT 8 COLS */}
         <div className="lg:col-span-8 space-y-6">
+          {/* Title & Description */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
             <h2 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">
               Title &amp; Description
@@ -127,7 +301,20 @@ export default function EditProductPage() {
 
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
-                Description
+                Short Description
+              </label>
+              <input
+                type="text"
+                value={shortDescription}
+                onChange={(e) => setShortDescription(e.target.value)}
+                placeholder="Brief summary for product cards..."
+                className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Full Description
               </label>
               <textarea
                 rows={5}
@@ -138,23 +325,120 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* Media Card */}
+          {/* Product Media & Photos (Automatic WebP + Cloudflare R2) */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-            <h2 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">
-              Product Media (Cloudflare R2)
-            </h2>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Primary Image URL
-              </label>
-              <input
-                type="text"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Product Media &amp; Photos
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  Images are automatically converted to high-performance WebP and stored in Cloudflare R2.
+                </p>
+              </div>
+              <span className="text-xs font-mono text-slate-500">
+                {images.length} {images.length === 1 ? "Image" : "Images"}
+              </span>
             </div>
+
+            {/* Upload Area */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all">
+                {uploadingImage ? (
+                  <div className="flex flex-col items-center space-y-2 text-slate-500">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#9e472a]" />
+                    <span className="text-xs font-medium">Converting to WebP &amp; Uploading...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center space-y-1.5 text-center">
+                    <UploadCloud className="w-6 h-6 text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-700">Upload Photo File</span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      JPG, PNG, WEBP, AVIF (Auto-WebP)
+                    </span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Add by URL */}
+              <div className="flex flex-col justify-center space-y-2 border border-slate-100 rounded-xl p-4 bg-slate-50/30">
+                <span className="text-xs font-semibold text-slate-700">Or Add by Image URL</span>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="https://..."
+                    className="flex-1 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Media Gallery Preview */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                {images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className={`group relative aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden border transition-all ${
+                      img.isPrimary ? "border-slate-900 ring-2 ring-slate-900/20" : "border-slate-200"
+                    }`}
+                  >
+                    <Image
+                      src={getMediaUrl(img.url)}
+                      alt={img.altText || `Image ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                    />
+
+                    {/* Primary Badge */}
+                    {img.isPrimary && (
+                      <span className="absolute top-2 left-2 bg-slate-900 text-white text-[9px] font-mono px-1.5 py-0.5 rounded shadow-xs">
+                        PRIMARY
+                      </span>
+                    )}
+
+                    {/* Actions Overlay */}
+                    <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                      {!img.isPrimary && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetPrimary(idx)}
+                          title="Set as Primary"
+                          className="p-1.5 bg-white text-slate-900 hover:bg-amber-50 rounded-md text-xs cursor-pointer transition-colors"
+                        >
+                          <Star className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteImage(idx)}
+                        title="Delete Image"
+                        className="p-1.5 bg-white text-rose-600 hover:bg-rose-50 rounded-md text-xs cursor-pointer transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Pricing Card */}
@@ -194,249 +478,60 @@ export default function EditProductPage() {
                 </label>
                 <input
                   type="number"
-                  value={costPerItem}
-                  onChange={(e) => setCostPerItem(e.target.value ? Number(e.target.value) : "")}
+                  value={costPrice}
+                  onChange={(e) => setCostPrice(e.target.value ? Number(e.target.value) : "")}
                   className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
             </div>
 
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
-              <span className="text-slate-600">
-                Estimated Profit: <strong className="text-slate-900 font-mono">৳{profit.toLocaleString("en-US")}</strong>
+            {/* Profit Margin Info */}
+            <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 flex items-center justify-between text-xs font-mono">
+              <span className="text-slate-500">Estimated Gross Margin:</span>
+              <span className={`font-semibold ${margin > 40 ? "text-emerald-700" : "text-amber-700"}`}>
+                ৳{profit.toLocaleString()} ({margin}%)
               </span>
-              <span className="text-slate-600">
-                Gross Margin: <strong className="text-emerald-700 font-mono">{margin}%</strong>
-              </span>
-            </div>
-          </div>
-
-          {/* Inventory Card */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-            <h2 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">
-              Inventory &amp; SKUs
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  SKU (Stock Keeping Unit)
-                </label>
-                <input
-                  type="text"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Barcode (ISBN, UPC, GTIN)
-                </label>
-                <input
-                  type="text"
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center space-x-2 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={trackInventory}
-                  onChange={(e) => setTrackInventory(e.target.checked)}
-                  className="rounded text-[#9e472a] focus:ring-[#9e472a]"
-                />
-                <span>Track inventory count</span>
-              </label>
-
-              {trackInventory && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-slate-500">Available:</span>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
-                    className="w-20 bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-mono text-slate-900 text-center"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Variants Card */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h2 className="text-sm font-semibold text-slate-900">Variants Matrix</h2>
-              <button
-                onClick={handleAddVariant}
-                className="flex items-center space-x-1 text-xs text-[#9e472a] font-medium hover:underline cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Variant</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-500 uppercase font-mono text-[10px]">
-                    <th className="py-2 px-3">Size</th>
-                    <th className="py-2 px-3">Color</th>
-                    <th className="py-2 px-3">Price (৳)</th>
-                    <th className="py-2 px-3">Stock</th>
-                    <th className="py-2 px-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {variants.map((v, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={v.size}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setVariants((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, size: val } : item))
-                            );
-                          }}
-                          className="w-16 bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs text-slate-900"
-                        />
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={v.color}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setVariants((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, color: val } : item))
-                            );
-                          }}
-                          className="w-28 bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs text-slate-900"
-                        />
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          value={v.price}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setVariants((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, price: val } : item))
-                            );
-                          }}
-                          className="w-24 bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-mono text-slate-900"
-                        />
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          value={v.stock}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setVariants((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, stock: val } : item))
-                            );
-                          }}
-                          className="w-16 bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-mono text-slate-900"
-                        />
-                      </td>
-                      <td className="py-2 px-3 text-right">
-                        <button
-                          onClick={() => handleDeleteVariant(idx)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         </div>
 
         {/* RIGHT 4 COLS */}
         <div className="lg:col-span-4 space-y-6">
+          {/* Status */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <h2 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">
               Product Status
             </h2>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value as "active" | "draft" | "archived")}
-              className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+              onChange={(e) => setStatus(e.target.value as "ACTIVE" | "DRAFT" | "ARCHIVED")}
+              className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
             >
-              <option value="active">Active (Visible in Storefront)</option>
-              <option value="draft">Draft (Hidden)</option>
-              <option value="archived">Archived</option>
+              <option value="ACTIVE">ACTIVE (Published)</option>
+              <option value="DRAFT">DRAFT (Hidden)</option>
+              <option value="ARCHIVED">ARCHIVED</option>
             </select>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Product Organization
+          {/* SKU & Identification */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
+            <h2 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">
+              Inventory SKU
             </h2>
-
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
-              >
-                <option value="Pants">Pants &amp; Denim</option>
-                <option value="Jackets">Jackets &amp; Outerwear</option>
-                <option value="T-Shirts">Heavyweight T-Shirts</option>
-                <option value="Belts">Leather Belts</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Tags</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Stock Keeping Unit (SKU) *
+              </label>
               <input
                 type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
               />
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-900">
-              <Sparkles className="w-3.5 h-3.5 text-[#9e472a]" />
-              <span>Search Engine Listing</span>
-            </div>
-
-            <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1 text-xs">
-              <div className="text-blue-700 font-medium line-clamp-1">
-                {title} — Rust &amp; Revive
-              </div>
-              <div className="text-emerald-700 font-mono text-[10px]">
-                https://rustrevive.store/products/{existingProduct.slug}
-              </div>
-              <div className="text-slate-500 text-[11px] line-clamp-2">
-                {description}
-              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 text-xs">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>{notification}</span>
-        </div>
-      )}
     </div>
   );
 }
