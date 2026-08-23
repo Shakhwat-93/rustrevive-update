@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image, { ImageProps } from "next/image";
+import Image, { type ImageProps } from "next/image";
 import { getMediaUrl } from "@/lib/media/media-url";
 
 interface SafeImageProps extends Omit<ImageProps, "src"> {
