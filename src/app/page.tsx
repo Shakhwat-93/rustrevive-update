@@ -1,5 +1,5 @@
 import { CMSService } from "@/lib/cms/cms.service";
-import { createPublicServerClient } from "@/lib/supabase/server";
+import { ProductService } from "@/lib/services/product.service";
 import { EditorialHeader } from "@/components/navigation/editorial-header";
 import { CampaignHero } from "@/components/editorial/CampaignHero";
 import { EditorialCollectionGrid } from "@/components/editorial/EditorialCollectionGrid";
@@ -33,8 +33,10 @@ interface ProductVariantJoin {
   title: string;
   sku: string;
   price: number;
+  compare_at_price?: number | null;
   is_active: boolean;
   inventory?: {
+    id?: string;
     quantity: number;
     reserved_quantity: number;
   }[];
@@ -60,73 +62,22 @@ interface ProductDbJoin {
   product_media?: ProductMediaJoin[] | null;
   product_variants?: ProductVariantJoin[] | null;
   inventory?: {
+    id?: string;
     quantity: number;
     reserved_quantity: number;
   }[];
-  reviews?: {
+  product_reviews?: {
     id: string;
     rating: number;
   }[];
 }
 
 export default async function HomePage() {
-  const supabase = createPublicServerClient();
-
   // 1. Fetch live CMS configuration
   const cmsConfig = await CMSService.getPublishedHomepageConfig();
 
-  // 2. Fetch live products from Supabase PostgreSQL
-  const { data: rawProducts } = await supabase
-    .from("products")
-    .select(`
-      id,
-      title,
-      short_description,
-      slug,
-      base_price,
-      compare_at_price,
-      category_id,
-      sku,
-      status,
-      is_featured,
-      created_at,
-      categories (
-        id,
-        name,
-        slug
-      ),
-      product_media (
-        is_primary,
-        sort_order,
-        media (
-          public_url,
-          alt_text
-        )
-      ),
-      product_variants (
-        id,
-        title,
-        sku,
-        price,
-        is_active,
-        inventory (
-          quantity,
-          reserved_quantity
-        )
-      ),
-      inventory (
-        quantity,
-        reserved_quantity
-      ),
-      reviews (
-        id,
-        rating
-      )
-    `)
-    .eq("is_active", true)
-    .eq("status", "ACTIVE")
-    .order("sort_order", { ascending: true });
-
+  // 2. Fetch live products directly from Supabase PostgreSQL
+  const rawProducts = await ProductService.getStorefrontProducts();
   const allDbProducts = (rawProducts as unknown as ProductDbJoin[]) || [];
 
   // Map database products to MerchandisedProductItem with stock & ratings
@@ -156,7 +107,7 @@ export default async function HomePage() {
     }
 
     // Calculate real review rating
-    const revs = p.reviews || [];
+    const revs = p.product_reviews || [];
     const avgRating = revs.length > 0
       ? revs.reduce((acc, r) => acc + (r.rating || 5), 0) / revs.length
       : 4.8;

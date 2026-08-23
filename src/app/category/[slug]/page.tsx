@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EditorialHeader } from "@/components/navigation/editorial-header";
 import { EditorialFooter } from "@/components/editorial/EditorialFooter";
-import { createPublicServerClient } from "@/lib/supabase/server";
+import { ProductService } from "@/lib/services/product.service";
 import { ShopCatalogView } from "@/app/shop/shop-catalog-view";
 
 interface CategoryPageProps {
@@ -12,17 +12,13 @@ interface CategoryPageProps {
 
 export async function generateMetadata(props: CategoryPageProps): Promise<Metadata> {
   const { slug } = await props.params;
-  const supabase = createPublicServerClient();
-  const { data: category } = await supabase
-    .from("categories")
-    .select("name, seo_title, seo_description")
-    .eq("slug", slug)
-    .maybeSingle();
+  const categories = await ProductService.getStorefrontCategories();
+  const category = categories.find((c) => c.slug.toLowerCase() === slug.toLowerCase());
 
   const name = category?.name || slug.replace(/-/g, " ").toUpperCase();
   return {
-    title: category?.seo_title || `${name} | Rust & Revive`,
-    description: category?.seo_description || `Discover hand-crafted ${name} from Rust & Revive.`,
+    title: `${name} | Rust & Revive`,
+    description: category?.description || `Discover hand-crafted ${name} from Rust & Revive.`,
     alternates: { canonical: `/category/${slug}` },
   };
 }
@@ -32,57 +28,17 @@ export const revalidate = 0;
 
 export default async function CategoryPage(props: CategoryPageProps) {
   const { slug } = await props.params;
-  const supabase = createPublicServerClient();
-
-  // Fetch Category
-  const { data: category } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
+  const categories = await ProductService.getStorefrontCategories();
+  const category = categories.find((c) => c.slug.toLowerCase() === slug.toLowerCase());
 
   if (!category && slug !== "all") {
     notFound();
   }
 
-  // Fetch all categories for filter pills
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("id, name, slug")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
   // Fetch Products in this category
-  let query = supabase
-    .from("products")
-    .select(`
-      id,
-      title,
-      slug,
-      base_price,
-      compare_at_price,
-      category_id,
-      sku,
-      status,
-      is_featured,
-      created_at,
-      product_media (
-        is_primary,
-        sort_order,
-        media (
-          public_url,
-          alt_text
-        )
-      )
-    `)
-    .eq("is_active", true)
-    .eq("status", "ACTIVE");
-
-  if (category) {
-    query = query.eq("category_id", category.id);
-  }
-
-  const { data: products } = await query.order("sort_order", { ascending: true });
+  const products = await ProductService.getStorefrontProducts(
+    category ? { category_id: category.id } : {}
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fbf9f5] text-[#141312]">

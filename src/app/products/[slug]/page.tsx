@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { EditorialHeader } from "@/components/navigation/editorial-header";
 import { EditorialFooter } from "@/components/editorial/EditorialFooter";
 import { ProductJsonLd } from "@/components/seo/json-ld";
-import { createPublicServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ProductService } from "@/lib/services/product.service";
 import { ProductDetailView } from "./product-detail-view";
 
 interface ProductPageProps {
@@ -19,20 +20,9 @@ interface MediaItem {
   } | null;
 }
 
-interface InventoryItem {
-  quantity: number;
-  reserved_quantity: number;
-}
-
 export async function generateMetadata(props: ProductPageProps): Promise<Metadata> {
   const { slug } = await props.params;
-  const supabase = createPublicServerClient();
-
-  const { data: product } = await supabase
-    .from("products")
-    .select("title, description, seo_title, seo_description, base_price, product_media(media(public_url))")
-    .eq("slug", slug)
-    .maybeSingle();
+  const product = await ProductService.getProductBySlug(slug);
 
   if (!product) {
     return { title: "Garment Not Found | Rust & Revive" };
@@ -60,67 +50,15 @@ export const revalidate = 0;
 
 export default async function ProductDetailPage(props: ProductPageProps) {
   const { slug } = await props.params;
-  const supabase = createPublicServerClient();
 
-  // 1. Fetch Product with Variants and Media
-  const { data: product, error } = await supabase
-    .from("products")
-    .select(`
-      id,
-      title,
-      slug,
-      description,
-      short_description,
-      status,
-      product_type,
-      brand,
-      category_id,
-      base_price,
-      compare_at_price,
-      sku,
-      has_variants,
-      is_active,
-      created_at,
-      product_variants (
-        id,
-        title,
-        sku,
-        price,
-        compare_at_price,
-        option_1_name,
-        option_1_value,
-        option_2_name,
-        option_2_value,
-        is_active,
-        inventory (
-          quantity,
-          reserved_quantity
-        )
-      ),
-      product_media (
-        id,
-        is_primary,
-        sort_order,
-        media (
-          public_url,
-          alt_text,
-          width,
-          height
-        )
-      ),
-      inventory (
-        quantity,
-        reserved_quantity
-      )
-    `)
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .eq("status", "ACTIVE")
-    .maybeSingle();
+  // 1. Fetch Product with Variants and Media via ProductService
+  const product = await ProductService.getProductBySlug(slug);
 
-  if (error || !product) {
+  if (!product) {
     notFound();
   }
+
+  const supabase = createAdminClient();
 
   // 2. Fetch Approved Reviews & Aggregates
   const { data: reviews } = await supabase
@@ -170,9 +108,18 @@ export default async function ProductDetailPage(props: ProductPageProps) {
   const productMedia = (product.product_media as unknown as MediaItem[]) || [];
   const images = productMedia.map((pm) => pm.media?.public_url).filter((url): url is string => Boolean(url));
 
-  const inventoryArray = (product.inventory as unknown as InventoryItem[]) || [];
-  const firstInv = inventoryArray[0];
-  const availableStock = firstInv ? firstInv.quantity - firstInv.reserved_quantity : 10;
+  // Calculate available stock across variants or product level
+  let totalAvailableStock = 0;
+  const variants = product.product_variants || [];
+  if (variants.length > 0) {
+    for (const v of variants) {
+      if (v.is_active && v.inventory?.[0]) {
+        totalAvailableStock += Math.max(0, v.inventory[0].quantity - (v.inventory[0].reserved_quantity || 0));
+      }
+    }
+  } else if (product.inventory?.[0]) {
+    totalAvailableStock = Math.max(0, product.inventory[0].quantity - (product.inventory[0].reserved_quantity || 0));
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fbf9f5] text-[#141312]">
@@ -181,25 +128,24 @@ export default async function ProductDetailPage(props: ProductPageProps) {
       {/* Schema.org Structured Data */}
       <ProductJsonLd
         name={product.title}
-        description={product.description || undefined}
+        description={product.description || ""}
         images={images}
         sku={product.sku}
         price={product.base_price}
         currency="BDT"
-        inStock={availableStock > 0}
-        brand={product.brand || "Rust & Revive"}
+        inStock={totalAvailableStock > 0}
+        url={`https://rustrevive.store/products/${product.slug}`}
         ratingValue={avgRating > 0 ? avgRating : undefined}
         reviewCount={totalReviews > 0 ? totalReviews : undefined}
-        url={`https://rustrevive.store/products/${product.slug}`}
       />
 
-      <main className="flex-1 w-full pt-20 sm:pt-24 pb-20">
+      <main className="flex-1 w-full pt-24 pb-20">
         <ProductDetailView
-          product={product}
+          product={product as unknown as Parameters<typeof ProductDetailView>[0]["product"]}
           reviews={reviewList}
+          relatedProducts={relatedProducts || []}
           avgRating={avgRating}
           totalReviews={totalReviews}
-          relatedProducts={relatedProducts || []}
         />
       </main>
 

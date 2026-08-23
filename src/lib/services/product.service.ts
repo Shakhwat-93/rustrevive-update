@@ -1,6 +1,5 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logging/logger";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
 import type { ProductStatus } from "@/types/database.types";
@@ -107,23 +106,133 @@ export class ProductService {
   }
 
   /**
+   * List active products for public storefront with complete media, variants, inventory, and categories
+   */
+  public static async getStorefrontProducts(filters: {
+    category_id?: string;
+    search?: string;
+    is_featured?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {}) {
+    const supabase = createAdminClient();
+    const limit = filters.limit || 100;
+    const offset = filters.offset || 0;
+
+    let query = supabase
+      .from("products")
+      .select(`
+        id,
+        title,
+        short_description,
+        slug,
+        base_price,
+        compare_at_price,
+        category_id,
+        sku,
+        status,
+        is_featured,
+        is_active,
+        sort_order,
+        created_at,
+        categories (
+          id,
+          name,
+          slug
+        ),
+        product_media (
+          is_primary,
+          sort_order,
+          media (
+            public_url,
+            alt_text
+          )
+        ),
+        product_variants (
+          id,
+          title,
+          sku,
+          price,
+          compare_at_price,
+          is_active,
+          inventory (
+            id,
+            quantity,
+            reserved_quantity
+          )
+        ),
+        inventory (
+          id,
+          quantity,
+          reserved_quantity
+        ),
+        product_reviews (
+          id,
+          rating,
+          status
+        )
+      `)
+      .eq("is_active", true)
+      .eq("status", "ACTIVE")
+      .order("sort_order", { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    if (filters.category_id) {
+      query = query.eq("category_id", filters.category_id);
+    }
+    if (filters.is_featured !== undefined) {
+      query = query.eq("is_featured", filters.is_featured);
+    }
+    if (filters.search) {
+      query = query.or(`title.ilike.%${filters.search}%,short_description.ilike.%${filters.search}%,sku.ilike.%${filters.search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      logger.error("Failed to query storefront products", error, "ProductService");
+      throw new Error(`Storefront products query error: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * List active categories for public storefront navigation and filters
+   */
+  public static async getStorefrontCategories() {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("categories")
+      .select("id, name, slug, description, image_url")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      logger.error("Failed to query storefront categories", error, "ProductService");
+      return [];
+    }
+
+    return data || [];
+  }
+
+  /**
    * Get single product by Slug for Public Storefront
    */
   public static async getProductBySlug(slug: string) {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("products")
       .select(`
         *,
         categories(id, name, slug),
-        product_variants(*),
+        product_variants(*, inventory(id, quantity, reserved_quantity, low_stock_threshold)),
         product_media(media_id, is_primary, sort_order, media(public_url, alt_text, width, height)),
-        inventory(quantity, reserved_quantity, low_stock_threshold)
+        inventory(id, quantity, reserved_quantity, low_stock_threshold)
       `)
       .eq("slug", slug)
       .eq("status", "ACTIVE")
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       return null;
