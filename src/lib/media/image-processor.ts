@@ -10,6 +10,12 @@ export interface ProcessedImageResult {
   fileSize: number;
 }
 
+function getSharpInstance(input: Buffer | Uint8Array) {
+  // Resilient resolution across CJS and ESM environments in Next.js
+  const sharpFn = (typeof sharp === "function" ? sharp : (sharp as unknown as { default: typeof sharp })?.default || sharp);
+  return sharpFn(input);
+}
+
 /**
  * Automatically converts any incoming image (PNG, JPEG, TIFF, BMP, WebP, etc.)
  * into an optimized high-performance WebP image with 85% quality and auto-rotation.
@@ -20,7 +26,7 @@ export async function convertToWebP(
 ): Promise<ProcessedImageResult> {
   try {
     const quality = options.quality || 85;
-    let transformer = sharp(inputBuffer).rotate(); // auto-rotate based on EXIF orientation
+    let transformer = getSharpInstance(inputBuffer).rotate(); // auto-rotate based on EXIF orientation
 
     const metadata = await transformer.metadata();
 
@@ -42,7 +48,7 @@ export async function convertToWebP(
       .toBuffer();
 
     // Re-read processed dimensions
-    const processedMetadata = await sharp(webpBuffer).metadata();
+    const processedMetadata = await getSharpInstance(webpBuffer).metadata();
 
     return {
       buffer: webpBuffer,

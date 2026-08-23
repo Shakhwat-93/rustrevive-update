@@ -73,7 +73,7 @@ export default function NewProductPage() {
   // Media
   const [images, setImages] = useState<ProductImage[]>([
     {
-      url: "https://pub-90e6c63b53cb4c518fdafb3bfeb44169.r2.dev/placeholder.webp",
+      url: "/placeholder-garment.webp",
       altText: "Product Main View",
       isPrimary: true,
     },
