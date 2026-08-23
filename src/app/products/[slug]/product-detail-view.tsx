@@ -41,6 +41,10 @@ interface ProductDetailViewProps {
       option_2_name: string | null;
       option_2_value: string | null;
       is_active: boolean;
+      inventory?: {
+        quantity: number;
+        reserved_quantity: number;
+      }[];
     }[];
     product_media?: {
       id: string;
@@ -105,6 +109,16 @@ export function ProductDetailView({
   const currentPrice = activeVariant ? activeVariant.price : product.base_price;
   const currentComparePrice = activeVariant ? activeVariant.compare_at_price : product.compare_at_price;
   const currentSku = activeVariant ? activeVariant.sku : product.sku;
+
+  // Real-Time Stock Calculation
+  const variantInv = activeVariant?.inventory?.[0];
+  const productInv = product.inventory?.[0];
+  const currentInv = activeVariant ? variantInv : productInv;
+  const availableStock = currentInv
+    ? Math.max(0, currentInv.quantity - (currentInv.reserved_quantity || 0))
+    : 10;
+  const isOutOfStock = availableStock <= 0;
+  const isLowStock = availableStock > 0 && availableStock <= 3;
 
   // Quantity & Wishlist
   const [quantity, setQuantity] = useState(1);
@@ -294,26 +308,67 @@ export function ProductDetailView({
             </p>
           )}
 
+          {/* Real-Time Stock Availability Indicator */}
+          <div className="flex items-center space-x-2 pt-1">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isOutOfStock
+                  ? "bg-rose-500"
+                  : isLowStock
+                  ? "bg-amber-500 animate-pulse"
+                  : "bg-emerald-500"
+              }`}
+            />
+            <span
+              className={`text-xs font-mono-meta uppercase tracking-wider font-semibold ${
+                isOutOfStock
+                  ? "text-rose-600"
+                  : isLowStock
+                  ? "text-amber-700"
+                  : "text-emerald-700"
+              }`}
+            >
+              {isOutOfStock
+                ? "Out of Stock"
+                : isLowStock
+                ? `Low Stock — Only ${availableStock} Remaining`
+                : `In Stock — Ready for Dispatch (${availableStock} available)`}
+            </span>
+          </div>
+
           {/* Variant Selector (If Any) */}
           {variants.length > 0 && (
             <div className="space-y-3 pt-2">
               <span className="text-xs font-mono-meta uppercase tracking-wider text-[#141312] font-semibold block">
-                Select Specification:
+                Select Size / Specification:
               </span>
               <div className="flex flex-wrap gap-2">
-                {variants.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => setSelectedVariantId(v.id)}
-                    className={`px-4 py-2 text-xs font-mono-meta uppercase tracking-wider border transition-all cursor-pointer ${
-                      selectedVariantId === v.id
-                        ? "border-[#141312] bg-[#141312] text-[#fbf9f5] font-bold"
-                        : "border-[#ded7c8] bg-white text-[#5c574e] hover:border-[#141312] hover:text-[#141312]"
-                    }`}
-                  >
-                    {v.title}
-                  </button>
-                ))}
+                {variants.map((v) => {
+                  const vStock = v.inventory?.[0]
+                    ? Math.max(0, v.inventory[0].quantity - (v.inventory[0].reserved_quantity || 0))
+                    : 10;
+                  const vOutOfStock = vStock <= 0;
+
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        setSelectedVariantId(v.id);
+                        setQuantity(1);
+                      }}
+                      className={`px-4 py-2 text-xs font-mono-meta uppercase tracking-wider border transition-all cursor-pointer flex items-center space-x-1.5 ${
+                        selectedVariantId === v.id
+                          ? "border-[#141312] bg-[#141312] text-[#fbf9f5] font-bold"
+                          : vOutOfStock
+                          ? "border-[#e5dfd5] bg-[#f8f6f2] text-[#a8a29e] line-through opacity-60"
+                          : "border-[#ded7c8] bg-white text-[#5c574e] hover:border-[#141312] hover:text-[#141312]"
+                      }`}
+                    >
+                      <span>{v.title}</span>
+                      {vOutOfStock && <span className="text-[10px] no-underline">(Sold Out)</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -325,17 +380,19 @@ export function ProductDetailView({
               <div className="flex items-center border border-[#ded7c8] bg-white">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="p-2.5 text-[#5c574e] hover:text-[#141312] cursor-pointer"
+                  disabled={isOutOfStock || quantity <= 1}
+                  className="p-2.5 text-[#5c574e] hover:text-[#141312] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Decrease quantity"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span className="px-4 text-xs font-mono-meta font-bold text-[#141312]">
-                  {quantity}
+                  {isOutOfStock ? 0 : quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="p-2.5 text-[#5c574e] hover:text-[#141312] cursor-pointer"
+                  onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
+                  disabled={isOutOfStock || quantity >= availableStock}
+                  className="p-2.5 text-[#5c574e] hover:text-[#141312] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Increase quantity"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -345,9 +402,16 @@ export function ProductDetailView({
               {/* Add to Bag CTA */}
               <button
                 onClick={handleAddToCart}
-                className="flex-1 py-3 bg-[#141312] hover:bg-[#9e472a] text-[#fbf9f5] text-xs font-mono-meta uppercase tracking-wider font-semibold transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+                disabled={isOutOfStock}
+                className={`flex-1 py-3 text-xs font-mono-meta uppercase tracking-wider font-semibold transition-colors flex items-center justify-center space-x-2 shadow-xs ${
+                  isOutOfStock
+                    ? "bg-[#ded7c8] text-[#8c8577] cursor-not-allowed"
+                    : "bg-[#141312] hover:bg-[#9e472a] text-[#fbf9f5] cursor-pointer"
+                }`}
               >
-                {addedAnimation ? (
+                {isOutOfStock ? (
+                  <span>Sold Out / Out of Stock</span>
+                ) : addedAnimation ? (
                   <>
                     <Check className="w-4 h-4 text-emerald-400" />
                     <span>Added to Bag</span>

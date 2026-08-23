@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CheckoutService, type CartItemInput } from "@/lib/services/checkout.service";
 import { CustomerService } from "@/lib/services/customer.service";
+import { InventoryService } from "@/lib/services/inventory.service";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
@@ -157,40 +158,12 @@ export class OrderService {
       logger.error("Failed to insert order items snapshot", itemsErr, "OrderService");
     }
 
-    // 6. Atomically Reserve Inventory & Record Ledger Movement
-    for (const item of pricingSummary.items) {
-      let invQuery = supabase.from("inventory").select("id, quantity, reserved_quantity");
-      if (item.variantId) {
-        invQuery = invQuery.eq("variant_id", item.variantId);
-      } else {
-        invQuery = invQuery.eq("product_id", item.productId).is("variant_id", null);
-      }
-
-      const { data: invRow } = await invQuery.maybeSingle();
-
-      if (invRow) {
-        // Increment reserved quantity
-        await supabase
-          .from("inventory")
-          .update({
-            reserved_quantity: (invRow.reserved_quantity || 0) + item.quantity,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", invRow.id);
-
-        // Record immutable inventory movement
-        await supabase.from("inventory_movements").insert({
-          inventory_id: invRow.id,
-          variant_id: item.variantId,
-          movement_type: "SALE",
-          quantity_change: -item.quantity,
-          reference_type: "ORDER",
-          reference_id: order.id,
-          reason: `Stock reserved for order ${order.order_number}`,
-          created_by: "System",
-        });
-      }
-    }
+    // 6. Atomically Deduct Inventory & Record Ledger Movement
+    await InventoryService.deductStockForOrder(
+      order.id,
+      order.order_number,
+      pricingSummary.items
+    );
 
     // 7. Record Initial Timeline Event
     await supabase.from("order_events").insert({
@@ -358,46 +331,13 @@ export class OrderService {
       updatedFulfillmentStatus = "CANCELLED";
     }
 
-    // 4. Handle Stock Release on Order Cancellation
+    // 4. Handle Stock Restoration on Order Cancellation / Fake / Rejection (with Double-Restock Protection)
     if (newStatus === "CANCELLED" && currentStatus !== "CANCELLED") {
-      // Release reserved stock for all items
-      const orderItems = (order.order_items || []) as unknown as {
-        product_id: string | null;
-        variant_id: string | null;
-        quantity: number;
-      }[];
-
-      for (const item of orderItems) {
-        let invQuery = supabase.from("inventory").select("id, quantity, reserved_quantity");
-        if (item.variant_id) {
-          invQuery = invQuery.eq("variant_id", item.variant_id);
-        } else if (item.product_id) {
-          invQuery = invQuery.eq("product_id", item.product_id).is("variant_id", null);
-        }
-
-        const { data: invRow } = await invQuery.maybeSingle();
-        if (invRow) {
-          const newReserved = Math.max(0, (invRow.reserved_quantity || 0) - item.quantity);
-          await supabase
-            .from("inventory")
-            .update({
-              reserved_quantity: newReserved,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", invRow.id);
-
-          await supabase.from("inventory_movements").insert({
-            inventory_id: invRow.id,
-            variant_id: item.variant_id,
-            movement_type: "CANCELLATION",
-            quantity_change: item.quantity,
-            reference_type: "ORDER",
-            reference_id: order.id,
-            reason: `Stock reservation released due to order ${order.order_number} cancellation`,
-            created_by: actorName,
-          });
-        }
-      }
+      await InventoryService.restoreStockForOrder(
+        order.id,
+        reason || `Order ${order.order_number} cancelled`,
+        actorName
+      );
     }
 
     // 5. Update Order in Database

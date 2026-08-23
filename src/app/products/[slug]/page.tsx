@@ -91,7 +91,11 @@ export default async function ProductDetailPage(props: ProductPageProps) {
         option_1_value,
         option_2_name,
         option_2_value,
-        is_active
+        is_active,
+        inventory (
+          quantity,
+          reserved_quantity
+        )
       ),
       product_media (
         id,
