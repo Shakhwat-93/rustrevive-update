@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { CheckoutService, type CartItemInput } from "@/lib/services/checkout.service";
 import { CustomerService } from "@/lib/services/customer.service";
 import { InventoryService } from "@/lib/services/inventory.service";
+import { DiscountService } from "@/lib/services/discount.service";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
@@ -31,6 +32,7 @@ export interface PlaceOrderInput {
   shippingAddress: CreateOrderAddressInput;
   billingAddress?: CreateOrderAddressInput;
   shippingMethodId?: string;
+  couponCode?: string;
   customerNotes?: string;
   paymentMethod?: "CASH_ON_DELIVERY";
   idempotencyKey?: string;
@@ -83,7 +85,10 @@ export class OrderService {
     // 2. Pure Server-Side Financial & Stock Validation
     const pricingSummary = await CheckoutService.calculateOrderSummary(
       input.items,
-      input.shippingMethodId
+      input.shippingMethodId,
+      input.couponCode,
+      undefined,
+      input.customer.email
     );
 
     // 3. Find or Create Customer Profile
@@ -165,13 +170,27 @@ export class OrderService {
       pricingSummary.items
     );
 
-    // 7. Record Initial Timeline Event
+    // 7. Record Discount Usage if Coupon was Applied
+    if (pricingSummary.appliedDiscount) {
+      await DiscountService.recordCouponUsage(
+        pricingSummary.appliedDiscount.discountId,
+        order.id,
+        pricingSummary.discountTotal,
+        customer?.id
+      );
+    }
+
+    // 8. Record Initial Timeline Event
+    const discountNote = pricingSummary.appliedDiscount
+      ? ` (Discount "${pricingSummary.appliedDiscount.code}": -৳${pricingSummary.discountTotal.toLocaleString()})`
+      : "";
+
     await supabase.from("order_events").insert({
       order_id: order.id,
       event_type: "ORDER_PLACED",
       old_status: null,
       new_status: "PENDING",
-      message: `Order ${order.order_number} placed via Cash on Delivery for ৳${pricingSummary.grandTotal.toLocaleString()}`,
+      message: `Order ${order.order_number} placed via Cash on Delivery for ৳${pricingSummary.grandTotal.toLocaleString()}${discountNote}`,
       created_by: "Customer",
     });
 

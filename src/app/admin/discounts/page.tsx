@@ -1,57 +1,70 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Tag,
   Plus,
   RefreshCw,
   Copy,
   Check,
+  Search,
+  Download,
+  Percent,
+  ShoppingBag,
+  Truck,
+  Edit2,
+  PowerOff,
+  Power,
 } from "lucide-react";
 import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { AdminButton } from "@/components/admin/ui/admin-button";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
-import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
 import { useAdminDialog } from "@/context/admin-dialog-context";
-import type { DiscountType } from "@/types/database.types";
+import type { PromotionType, PromotionRuleConfig } from "@/lib/services/discount.service";
 
-interface DiscountRow {
+interface DiscountItem {
   id: string;
   code: string;
   name: string;
-  type: DiscountType;
+  displayName: string;
+  type: string;
   value: number;
-  minimum_order_amount: number;
-  maximum_discount_amount: number | null;
   usage_limit: number | null;
   usage_count: number;
   is_active: boolean;
-  starts_at: string | null;
-  ends_at: string | null;
+  computedStatus: "ACTIVE" | "SCHEDULED" | "EXPIRED" | "DISABLED" | "DRAFT";
+  rules: PromotionRuleConfig;
   created_at: string;
 }
 
+const STATUS_TABS: { id: "ALL" | "ACTIVE" | "SCHEDULED" | "EXPIRED" | "DISABLED"; label: string }[] = [
+  { id: "ALL", label: "All" },
+  { id: "ACTIVE", label: "Active" },
+  { id: "SCHEDULED", label: "Scheduled" },
+  { id: "EXPIRED", label: "Expired" },
+  { id: "DISABLED", label: "Disabled" },
+];
+
 export default function AdminDiscountsPage() {
-  const [discounts, setDiscounts] = useState<DiscountRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const router = useRouter();
   const { showToast } = useAdminDialog();
 
-  // Form State
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [type, setType] = useState<DiscountType>("PERCENTAGE");
-  const [value, setValue] = useState(10);
-  const [minOrder, setMinOrder] = useState(1000);
-  const [maxDiscount] = useState<number | undefined>(500);
-  const [usageLimit, setUsageLimit] = useState<number | undefined>(100);
-  const [submitting, setSubmitting] = useState(false);
+  const [discounts, setDiscounts] = useState<DiscountItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"ALL" | "ACTIVE" | "SCHEDULED" | "EXPIRED" | "DISABLED">("ALL");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const fetchDiscounts = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/discounts");
+      const params = new URLSearchParams();
+      if (activeTab !== "ALL") params.set("status", activeTab);
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+
+      const res = await fetch(`/api/admin/discounts?${params.toString()}`);
       const data = await res.json();
       if (data?.data) {
         setDiscounts(data.data);
@@ -61,345 +74,313 @@ export default function AdminDiscountsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTab, searchQuery]);
 
   useEffect(() => {
     fetchDiscounts();
   }, [fetchDiscounts]);
 
-  const handleCopy = (couponCode: string) => {
-    navigator.clipboard.writeText(couponCode);
-    setCopiedCode(couponCode);
+  const handleCopy = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    showToast(`Copied code "${code}" to clipboard!`, "success");
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleCreateDiscount = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleToggleStatus = async (item: DiscountItem) => {
     try {
-      setSubmitting(true);
-      const res = await fetch("/api/admin/discounts", {
-        method: "POST",
+      const res = await fetch(`/api/admin/discounts/${item.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          name,
-          type,
-          value,
-          minimum_order_amount: minOrder,
-          maximum_discount_amount: maxDiscount,
-          usage_limit: usageLimit,
-        }),
+        body: JSON.stringify({ is_active: !item.is_active }),
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        showToast(errData?.error?.message || "Failed to create discount.", "error");
-      } else {
-        setShowModal(false);
-        setCode("");
-        setName("");
-        showToast(`Coupon ${code} created successfully`, "success");
-        await fetchDiscounts();
+        throw new Error("Failed to update status.");
       }
-    } catch {
-      showToast("Error creating discount.", "error");
-    } finally {
-      setSubmitting(false);
+
+      showToast(`Discount "${item.code}" is now ${!item.is_active ? "Active" : "Disabled"}.`, "success");
+      fetchDiscounts();
+    } catch (err: unknown) {
+      showToast((err as Error).message, "error");
     }
   };
 
-  const columns: ColumnDef<DiscountRow>[] = [
-    {
-      key: "code",
-      header: "Coupon Code",
-      sortable: true,
-      cell: (row: DiscountRow) => (
-        <div className="flex items-center space-x-2">
-          <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-            {row.code}
-          </span>
-          <button
-            onClick={() => handleCopy(row.code)}
-            className="text-slate-400 hover:text-slate-700 transition-colors"
-            title="Copy code"
-          >
-            {copiedCode === row.code ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-      ),
-    },
-    {
-      key: "name",
-      header: "Campaign Name",
-      sortable: true,
-      cell: (row: DiscountRow) => (
-        <div className="flex flex-col">
-          <span className="text-xs font-medium text-slate-900">{row.name}</span>
-          <span className="text-[11px] font-mono text-slate-500">
-            Min Order: ৳{row.minimum_order_amount.toLocaleString()}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "type",
-      header: "Benefit",
-      sortable: true,
-      cell: (row: DiscountRow) => {
-        let label = "";
-        if (row.type === "PERCENTAGE") label = `${row.value}% Off`;
-        else if (row.type === "FIXED_AMOUNT") label = `৳${row.value.toLocaleString()} Off`;
-        else if (row.type === "FREE_SHIPPING") label = "Free Delivery";
+  const handleExportCSV = () => {
+    if (discounts.length === 0) return;
 
-        return (
-          <span className="font-mono text-xs font-semibold text-emerald-700">
-            {label}
-          </span>
-        );
-      },
-    },
-    {
-      key: "usage",
-      header: "Redemptions",
-      sortable: true,
-      cell: (row: DiscountRow) => (
-        <div className="flex flex-col font-mono text-xs text-slate-700">
-          <span>{row.usage_count} used</span>
-          <span className="text-[10px] text-slate-400">
-            {row.usage_limit ? `Limit: ${row.usage_limit}` : "Unlimited"}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      sortable: true,
-      cell: (row: DiscountRow) => (
-        <StatusBadge status={row.is_active ? "active" : "archived"} size="sm" />
-      ),
-    },
-  ];
+    const headers = ["Title", "Code", "Type", "Method", "Value", "Status", "Used", "Usage Limit", "Starts At", "Ends At"];
+    const rows = discounts.map((d) => [
+      `"${d.displayName.replace(/"/g, '""')}"`,
+      `"${d.code}"`,
+      `"${d.rules?.promotionType || d.type}"`,
+      `"${d.rules?.method || 'CODE'}"`,
+      d.value,
+      d.computedStatus,
+      d.usage_count,
+      d.rules?.usageLimit || d.usage_limit || "Unlimited",
+      d.rules?.startsAt || "",
+      d.rules?.endsAt || "",
+    ]);
 
-  // Mobile Discount Card Render
-  const renderMobileDiscountCard = (row: DiscountRow) => {
-    let benefitLabel = "";
-    if (row.type === "PERCENTAGE") benefitLabel = `${row.value}% OFF`;
-    else if (row.type === "FIXED_AMOUNT") benefitLabel = `৳${row.value.toLocaleString()} OFF`;
-    else if (row.type === "FREE_SHIPPING") benefitLabel = "FREE DELIVERY";
-
-    return (
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-              {row.code}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCopy(row.code);
-              }}
-              className="text-slate-400 hover:text-slate-700 p-1"
-              title="Copy code"
-            >
-              {copiedCode === row.code ? (
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
-              ) : (
-                <Copy className="w-3.5 h-3.5" />
-              )}
-            </button>
-          </div>
-          <StatusBadge status={row.is_active ? "active" : "archived"} size="sm" />
-        </div>
-
-        <div className="flex items-baseline justify-between pt-1">
-          <div className="min-w-0 pr-2">
-            <h4 className="text-xs font-semibold text-slate-800 truncate">{row.name}</h4>
-            <p className="text-[11px] font-mono text-slate-500">
-              Min Order: ৳{row.minimum_order_amount.toLocaleString()}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="font-mono text-xs font-bold text-emerald-700">
-              {benefitLabel}
-            </div>
-            <div className="text-[10px] font-mono text-slate-400">
-              {row.usage_count} / {row.usage_limit || "∞"} used
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `rustrevive_discounts_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
     <AdminPageLayout
-      title="Coupons & Discounts"
-      subtitle="Create promotional campaigns, coupon codes, and server-side discount thresholds."
-      badge={
-        <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-semibold">
-          {discounts.length} coupons
-        </span>
-      }
+      title="Discounts & Promotions"
+      subtitle="Manage promotional discount codes, Buy X Get Y offers, and free shipping campaigns."
       actions={
-        <div className="flex items-center space-x-2">
-          <AdminButton
-            variant="secondary"
-            icon={RefreshCw}
-            isLoading={loading}
-            onClick={fetchDiscounts}
-          >
-            Refresh
+        <div className="flex items-center space-x-2.5">
+          <AdminButton variant="outline" size="sm" onClick={handleExportCSV} disabled={discounts.length === 0}>
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Export CSV
           </AdminButton>
           <AdminButton
             variant="primary"
-            icon={Plus}
-            onClick={() => setShowModal(true)}
+            size="sm"
+            onClick={() => router.push("/admin/discounts/new")}
           >
-            Create Coupon
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            Create Discount
           </AdminButton>
         </div>
       }
     >
-      <DataTable
-        columns={columns}
-        data={discounts}
-        searchPlaceholder="Search coupon code or campaign..."
-        searchKey="code"
-        mobileCardRender={renderMobileDiscountCard}
-      />
-
-      {/* Responsive Modal / Bottom Sheet */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-200">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Tag className="w-4 h-4 text-[#9e472a]" />
-                <h3 className="font-semibold text-sm text-slate-900">
-                  Create Promotional Coupon
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                ✕
-              </button>
+      <div className="space-y-4">
+        {/* Filter Controls & Search */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Status Tabs */}
+            <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0">
+              {STATUS_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "bg-slate-900 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            <form onSubmit={handleCreateDiscount} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono font-medium text-slate-700 uppercase tracking-wider mb-1">
-                    Coupon Code
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. SUMMER20"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    className="w-full px-3 py-2 text-xs font-mono uppercase border border-slate-200 rounded-lg focus:border-slate-800 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono font-medium text-slate-700 uppercase tracking-wider mb-1">
-                    Campaign Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Summer Launch 20%"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-800 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono font-medium text-slate-700 uppercase tracking-wider mb-1">
-                    Discount Type
-                  </label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value as DiscountType)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-800 outline-none bg-white"
-                  >
-                    <option value="PERCENTAGE">Percentage (%)</option>
-                    <option value="FIXED_AMOUNT">Fixed Amount (৳)</option>
-                    <option value="FREE_SHIPPING">Free Delivery</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono font-medium text-slate-700 uppercase tracking-wider mb-1">
-                    Value {type === "PERCENTAGE" ? "(%)" : "(৳)"}
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={value}
-                    onChange={(e) => setValue(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:border-slate-800 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono font-medium text-slate-700 uppercase tracking-wider mb-1">
-                    Min Order Amount (৳)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={minOrder}
-                    onChange={(e) => setMinOrder(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:border-slate-800 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono font-medium text-slate-700 uppercase tracking-wider mb-1">
-                    Usage Limit (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="Unlimited"
-                    value={usageLimit || ""}
-                    onChange={(e) => setUsageLimit(e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:border-slate-800 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? "Saving..." : "Create Coupon"}
-                </button>
-              </div>
-            </form>
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search code, title, type..."
+                className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl outline-none focus:border-[#9e472a] bg-slate-50 focus:bg-white transition-all"
+              />
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Master Table */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center space-y-3">
+              <RefreshCw className="w-6 h-6 text-[#9e472a] animate-spin" />
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Loading Promotions...
+              </p>
+            </div>
+          ) : discounts.length === 0 ? (
+            <div className="py-16 text-center space-y-3">
+              <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
+                <Tag className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900">No discounts found</h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                {searchQuery || activeTab !== "ALL"
+                  ? "No promotions match your active filters. Try resetting the search or filter tab."
+                  : "Create your first discount code or Buy X Get Y campaign to boost conversions."}
+              </p>
+              <div className="pt-2">
+                <AdminButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => router.push("/admin/discounts/new")}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
+                  Create Discount
+                </AdminButton>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="py-3.5 px-4">Title & Code</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Method</th>
+                    <th className="py-3.5 px-4">Type</th>
+                    <th className="py-3.5 px-4">Eligibility</th>
+                    <th className="py-3.5 px-4">Used</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {discounts.map((item) => {
+                    const promoType = item.rules?.promotionType || (item.type as PromotionType);
+                    const method = item.rules?.method || "CODE";
+                    const isCode = method === "CODE";
+
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                        {/* Title & Code */}
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-1">
+                            <Link
+                              href={`/admin/discounts/${item.id}/edit`}
+                              className="font-bold text-slate-900 hover:text-[#9e472a] transition-colors line-clamp-1"
+                            >
+                              {item.displayName}
+                            </Link>
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                                {item.code}
+                              </span>
+                              {isCode && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(item.code)}
+                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition-colors cursor-pointer"
+                                  title="Copy code"
+                                >
+                                  {copiedCode === item.code ? (
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3.5 px-4">
+                          <StatusBadge
+                            status={
+                              item.computedStatus === "ACTIVE"
+                                ? "active"
+                                : item.computedStatus === "SCHEDULED"
+                                ? "pending"
+                                : item.computedStatus === "EXPIRED"
+                                ? "archived"
+                                : "draft"
+                            }
+                            label={item.computedStatus}
+                          />
+                        </td>
+
+                        {/* Method */}
+                        <td className="py-3.5 px-4">
+                          <span className="font-medium text-slate-700">
+                            {method === "CODE" ? "Code" : "Automatic"}
+                          </span>
+                        </td>
+
+                        {/* Type */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center space-x-1.5 text-slate-700">
+                            {promoType === "FREE_SHIPPING" ? (
+                              <>
+                                <Truck className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Free shipping</span>
+                              </>
+                            ) : promoType === "BUY_X_GET_Y" ? (
+                              <>
+                                <ShoppingBag className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Buy X Get Y</span>
+                              </>
+                            ) : promoType === "AMOUNT_OFF_PRODUCTS" ? (
+                              <>
+                                <Tag className="w-3.5 h-3.5 text-[#9e472a]" />
+                                <span>Amount off products</span>
+                              </>
+                            ) : (
+                              <>
+                                <Percent className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Amount off order</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Eligibility */}
+                        <td className="py-3.5 px-4">
+                          <span className="text-slate-600">
+                            {item.rules?.customerEligibility === "REGISTERED_CUSTOMERS"
+                              ? "Registered"
+                              : item.rules?.customerEligibility === "GUEST_CUSTOMERS"
+                              ? "Guests"
+                              : "All customers"}
+                          </span>
+                        </td>
+
+                        {/* Used */}
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-slate-700">
+                          {item.usage_count}
+                          {item.rules?.usageLimit || item.usage_limit
+                            ? ` of ${item.rules?.usageLimit || item.usage_limit}`
+                            : " used"}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/admin/discounts/${item.id}/edit`)}
+                              className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+                              title="Edit discount"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(item)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                item.is_active
+                                  ? "text-emerald-600 hover:text-rose-600 hover:bg-rose-50"
+                                  : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                              }`}
+                              title={item.is_active ? "Disable discount" : "Enable discount"}
+                            >
+                              {item.is_active ? (
+                                <Power className="w-3.5 h-3.5" />
+                              ) : (
+                                <PowerOff className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </AdminPageLayout>
   );
 }

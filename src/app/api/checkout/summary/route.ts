@@ -13,8 +13,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const items: CartItemInput[] = body.items || [];
     const shippingMethodId: string | undefined = body.shippingMethodId;
+    const couponCode: string | undefined = body.couponCode;
+    const customerId: string | undefined = body.customerId;
+    const customerEmail: string | undefined = body.customerEmail;
 
-    const summary = await CheckoutService.calculateOrderSummary(items, shippingMethodId);
+    const summary = await CheckoutService.calculateOrderSummary(
+      items,
+      shippingMethodId,
+      couponCode,
+      customerId,
+      customerEmail
+    );
     return successResponse(summary);
   } catch (error: unknown) {
     logger.error("POST /api/checkout/summary error", error, "CheckoutSummaryAPI");

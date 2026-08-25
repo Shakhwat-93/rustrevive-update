@@ -4,6 +4,8 @@ import { createPublicServerClient } from "@/lib/supabase/server";
 import { ValidationError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 
+import { DiscountService, type ValidatePromotionResult, type DiscountItemContext } from "@/lib/services/discount.service";
+
 export interface CartItemInput {
   productId: string;
   variantId?: string;
@@ -21,6 +23,7 @@ export interface ValidatedLineItem {
   quantity: number;
   lineTotal: number;
   availableStock: number;
+  discountAllocated?: number;
 }
 
 export interface OrderPricingSummary {
@@ -33,6 +36,7 @@ export interface OrderPricingSummary {
   grandTotal: number;
   currency: string;
   shippingMethodName: string;
+  appliedDiscount?: ValidatePromotionResult | null;
 }
 
 interface DBProductRow {
@@ -83,7 +87,10 @@ export class CheckoutService {
    */
   public static async calculateOrderSummary(
     items: CartItemInput[],
-    shippingMethodId?: string
+    shippingMethodId?: string,
+    couponCode?: string | null,
+    customerId?: string | null,
+    customerEmail?: string | null
   ): Promise<OrderPricingSummary> {
     if (!items || items.length === 0) {
       throw new ValidationError("Cart is empty. Please add items to proceed.", { field: "items" });
@@ -93,7 +100,7 @@ export class CheckoutService {
     const productIds = Array.from(new Set(items.map((i) => i.productId)));
     const variantIds = items.map((i) => i.variantId).filter(Boolean) as string[];
 
-    // 1. Fetch active products with primary media & inventory
+    // 1. Fetch active products with primary media, category & inventory
     const { data: rawProducts, error: prodErr } = await supabase
       .from("products")
       .select(`
@@ -101,6 +108,7 @@ export class CheckoutService {
         title,
         sku,
         base_price,
+        category_id,
         status,
         is_active,
         product_media(is_primary, media(public_url)),
@@ -113,7 +121,7 @@ export class CheckoutService {
       throw new Error("Unable to validate cart products at this time.");
     }
 
-    const dbProducts = rawProducts as unknown as DBProductRow[];
+    const dbProducts = rawProducts as unknown as (DBProductRow & { category_id?: string | null })[];
 
     // 2. Fetch variants if requested
     let dbVariants: {
@@ -147,6 +155,7 @@ export class CheckoutService {
 
     // 3. Match and Validate Every Cart Item
     const validatedItems: ValidatedLineItem[] = [];
+    const discountContextItems: DiscountItemContext[] = [];
     let subtotal = 0;
 
     for (const item of items) {
@@ -201,6 +210,15 @@ export class CheckoutService {
           lineTotal,
           availableStock,
         });
+
+        discountContextItems.push({
+          productId: product.id,
+          variantId: variant.id,
+          categoryId: product.category_id,
+          unitPrice,
+          quantity,
+          title: `${product.title} (${variant.title})`,
+        });
       } else {
         // Base product without variants
         const inv = product.inventory?.[0];
@@ -229,6 +247,15 @@ export class CheckoutService {
           lineTotal,
           availableStock,
         });
+
+        discountContextItems.push({
+          productId: product.id,
+          variantId: null,
+          categoryId: product.category_id,
+          unitPrice,
+          quantity,
+          title: product.title,
+        });
       }
     }
 
@@ -250,9 +277,41 @@ export class CheckoutService {
       }
     }
 
-    const discountTotal = 0;
+    // 5. Pure Server-Side Promotion Engine Evaluation
+    let discountTotal = 0;
+    let appliedDiscount: ValidatePromotionResult | null = null;
+
+    if (couponCode && couponCode.trim()) {
+      appliedDiscount = await DiscountService.validatePromotion(
+        couponCode.trim(),
+        discountContextItems,
+        shippingTotal,
+        customerId,
+        customerEmail
+      );
+
+      if (appliedDiscount.isFreeShipping) {
+        discountTotal += shippingTotal;
+        shippingTotal = 0;
+      } else {
+        discountTotal = appliedDiscount.discountAmount;
+      }
+
+      // Distribute line-item allocations if any
+      if (appliedDiscount.itemAllocations) {
+        for (const alloc of appliedDiscount.itemAllocations) {
+          const matchedItem = validatedItems.find(
+            (i) => i.productId === alloc.productId && i.variantId === alloc.variantId
+          );
+          if (matchedItem) {
+            matchedItem.discountAllocated = alloc.discountAmount;
+          }
+        }
+      }
+    }
+
     const taxTotal = 0;
-    const grandTotal = subtotal + shippingTotal + taxTotal - discountTotal;
+    const grandTotal = Math.max(0, subtotal + shippingTotal + taxTotal - (appliedDiscount?.isFreeShipping ? 0 : discountTotal));
 
     return {
       items: validatedItems,
@@ -264,6 +323,7 @@ export class CheckoutService {
       grandTotal,
       currency: "BDT",
       shippingMethodName,
+      appliedDiscount,
     };
   }
 }

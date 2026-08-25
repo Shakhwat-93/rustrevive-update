@@ -13,6 +13,9 @@ import {
   AlertCircle,
   Loader2,
   Package,
+  Tag,
+  X,
+  CheckCircle2,
 } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 
@@ -35,7 +38,7 @@ interface PricingSummary {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, clearCart } = useCart();
+  const { items, clearCart, appliedCoupon, applyCoupon, removeCoupon } = useCart();
 
   // Stable idempotency key for this checkout attempt
   const [idempotencyKey] = useState(() => `rr_checkout_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
@@ -46,6 +49,11 @@ export default function CheckoutPage() {
   const [isValidating, setIsValidating] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Coupon Form State
+  const [couponInput, setCouponInput] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponFeedback, setCouponFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Form State
   const [form, setForm] = useState({
@@ -93,6 +101,8 @@ export default function CheckoutPage() {
               quantity: i.quantity,
             })),
             shippingMethodId: selectedShippingId || undefined,
+            couponCode: appliedCoupon?.code || undefined,
+            customerEmail: form.email || undefined,
           }),
         });
 
@@ -110,7 +120,24 @@ export default function CheckoutPage() {
     }
 
     loadCheckoutData();
-  }, [items, selectedShippingId]);
+  }, [items, selectedShippingId, appliedCoupon, form.email]);
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+
+    setCouponLoading(true);
+    setCouponFeedback(null);
+    const res = await applyCoupon(couponInput.trim());
+    setCouponLoading(false);
+
+    if (res.success) {
+      setCouponFeedback({ type: "success", message: res.message });
+      setCouponInput("");
+    } else {
+      setCouponFeedback({ type: "error", message: res.message });
+    }
+  };
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +178,7 @@ export default function CheckoutPage() {
           country: "Bangladesh",
         },
         shippingMethodId: selectedShippingId || undefined,
+        couponCode: appliedCoupon?.code || undefined,
         customerNotes: form.customerNotes.trim() || undefined,
         paymentMethod: "CASH_ON_DELIVERY",
         idempotencyKey,
@@ -507,6 +535,75 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              {/* Coupon / Promo Code Input */}
+              <div className="border-t border-[#f0ebe1] pt-4 space-y-2">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-[#141312] font-semibold flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5">
+                    <Tag className="w-3.5 h-3.5 text-[#9e472a]" />
+                    <span>Promo / Discount Code</span>
+                  </span>
+                </label>
+
+                {appliedCoupon ? (
+                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-mono font-bold text-emerald-800 tracking-wider">
+                            {appliedCoupon.code}
+                          </span>
+                          <span className="text-[10px] font-mono bg-emerald-200/60 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">
+                            APPLIED
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-emerald-700 mt-0.5 line-clamp-1">
+                          {appliedCoupon.message}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeCoupon()}
+                      className="text-emerald-700 hover:text-red-600 p-1 text-xs transition-colors"
+                      title="Remove coupon"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="flex space-x-1.5">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        placeholder="e.g. REVIVE10"
+                        className="flex-1 px-3 py-2 text-xs font-mono uppercase border border-[#ded7c8] bg-white outline-none focus:border-[#141312]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponInput.trim()}
+                        className="px-4 py-2 bg-[#141312] text-[#fbf9f5] font-mono text-xs uppercase tracking-wider font-semibold hover:bg-[#9e472a] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {couponLoading ? "..." : "Apply"}
+                      </button>
+                    </div>
+
+                    {couponFeedback && (
+                      <p
+                        className={`text-[11px] font-mono ${
+                          couponFeedback.type === "success" ? "text-emerald-600" : "text-rose-600"
+                        }`}
+                      >
+                        {couponFeedback.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Server Price Calculation Breakdown */}
               <div className="border-t border-[#f0ebe1] pt-4 space-y-2 text-xs font-mono">
                 <div className="flex justify-between text-[#6E6B63]">
@@ -515,12 +612,30 @@ export default function CheckoutPage() {
                     ৳{pricing ? pricing.subtotal.toLocaleString() : "..."}
                   </span>
                 </div>
+
+                {pricing && pricing.discountTotal > 0 && (
+                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <span className="flex items-center space-x-1">
+                      <Tag className="w-3 h-3" />
+                      <span>Discount ({appliedCoupon?.code || "PROMO"})</span>
+                    </span>
+                    <span>-৳{pricing.discountTotal.toLocaleString()}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-[#6E6B63]">
                   <span>Shipping</span>
                   <span className="text-[#141312]">
-                    ৳{pricing ? pricing.shippingTotal.toLocaleString() : "120"}
+                    {pricing?.shippingTotal === 0 ? (
+                      <span className="text-emerald-700 font-bold uppercase text-[10px] bg-emerald-50 px-1.5 py-0.5 border border-emerald-200">
+                        FREE SHIPPING
+                      </span>
+                    ) : (
+                      `৳${pricing ? pricing.shippingTotal.toLocaleString() : "120"}`
+                    )}
                   </span>
                 </div>
+
                 <div className="border-t border-[#141312] pt-3 flex justify-between text-base font-semibold text-[#141312]">
                   <span>Grand Total</span>
                   <span className="text-[#9e472a]">

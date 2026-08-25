@@ -1,11 +1,21 @@
 import { NextRequest } from "next/server";
-import { DiscountService } from "@/lib/services/discount.service";
+import { DiscountService, type PromotionRuleConfig } from "@/lib/services/discount.service";
 import { successResponse, errorResponse } from "@/lib/api/response";
 import { ValidationError } from "@/lib/errors/app-error";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
   try {
-    const discounts = await DiscountService.listDiscounts();
+    const { searchParams } = new URL(req.url);
+    const rawStatus = searchParams.get("status") || "ALL";
+    const search = searchParams.get("search") || undefined;
+
+    const status = (["ALL", "ACTIVE", "SCHEDULED", "EXPIRED", "DISABLED", "DRAFT"].includes(rawStatus)
+      ? rawStatus
+      : "ALL") as "ALL" | "ACTIVE" | "SCHEDULED" | "EXPIRED" | "DISABLED" | "DRAFT";
+
+    const discounts = await DiscountService.listDiscounts({ status, search });
     return successResponse(discounts);
   } catch (err: unknown) {
     return errorResponse(err, "AdminDiscountsGET");
@@ -15,23 +25,36 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { code, name, type, value, minimum_order_amount, maximum_discount_amount, usage_limit, per_customer_limit, starts_at, ends_at } = body;
+    const { code, name, rules } = body;
 
-    if (!code || !name || !type || value === undefined) {
-      throw new ValidationError("Missing required coupon fields.", { fields: ["code", "name", "type", "value"] });
+    if (!code || !name) {
+      throw new ValidationError("Discount title and code are required.", { fields: ["code", "name"] });
     }
+
+    const ruleConfig: PromotionRuleConfig = rules || {
+      promotionType: "AMOUNT_OFF_ORDER",
+      method: "CODE",
+      valueType: "PERCENTAGE",
+      value: Number(body.value) || 10,
+      appliesTo: "ALL_PRODUCTS",
+      minimumRequirementType: body.minimum_order_amount ? "MINIMUM_PURCHASE_AMOUNT" : "NONE",
+      minimumPurchaseAmount: Number(body.minimum_order_amount) || 0,
+      customerEligibility: "ALL_CUSTOMERS",
+      usageLimit: body.usage_limit ? Number(body.usage_limit) : null,
+      perCustomerLimit: body.per_customer_limit ? Number(body.per_customer_limit) : 1,
+      startsAt: body.starts_at || null,
+      endsAt: body.ends_at || null,
+      combinations: {
+        canCombineWithProductDiscounts: false,
+        canCombineWithOrderDiscounts: false,
+        canCombineWithShippingDiscounts: false,
+      },
+    };
 
     const discount = await DiscountService.createDiscount({
       code,
       name,
-      type,
-      value: Number(value),
-      minimum_order_amount: Number(minimum_order_amount) || 0,
-      maximum_discount_amount: maximum_discount_amount ? Number(maximum_discount_amount) : undefined,
-      usage_limit: usage_limit ? Number(usage_limit) : undefined,
-      per_customer_limit: per_customer_limit ? Number(per_customer_limit) : 1,
-      starts_at,
-      ends_at,
+      rules: ruleConfig,
     });
 
     return successResponse(discount, 201);
