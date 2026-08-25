@@ -21,6 +21,10 @@ import {
   type OptionConfig,
   type GeneratedVariant,
 } from "@/components/admin/products/VariantMatrixEditor";
+import {
+  SizeChartEditor,
+  type SizeChartData,
+} from "@/components/admin/products/SizeChartEditor";
 
 export interface ProductFormData {
   id?: string;
@@ -51,6 +55,7 @@ export interface ProductFormData {
   images: ProductMediaItem[];
   options: OptionConfig[];
   variants: GeneratedVariant[];
+  size_chart?: SizeChartData;
   metafields?: Record<string, string>;
 }
 
@@ -116,6 +121,9 @@ export function ProductForm({ initialData, mode, productId }: ProductFormProps) 
   );
   const [fabricSpec, setFabricSpec] = useState(
     initialData?.metafields?.["fabric_spec"] || "100% Heavyweight Cotton"
+  );
+  const [sizeChart, setSizeChart] = useState<SizeChartData | undefined>(
+    initialData?.size_chart
   );
   const [template, setTemplate] = useState("Default product");
 
@@ -280,6 +288,7 @@ export function ProductForm({ initialData, mode, productId }: ProductFormProps) 
         seo_description: seoDescription.trim() || shortDescription.trim() || undefined,
         media_ids: mediaIds,
         initial_inventory: Number(initialInventory) || 0,
+        size_chart: sizeChart,
         variants: hasVariants
           ? variants.map((v) => ({
               title: v.title,
@@ -754,7 +763,28 @@ export function ProductForm({ initialData, mode, productId }: ProductFormProps) 
               )}
             </section>
 
-            {/* 7. Shipping Specs */}
+            {/* 7. Size Chart & Garment Measurements Card */}
+            <section className="p-6 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-4">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                  Size Chart & Garment Measurements
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Add an interactive size table (Chest, Length, Shoulder, Sleeve) or upload a direct size chart image. This will display on the product page.
+                </p>
+              </div>
+
+              <SizeChartEditor
+                value={sizeChart}
+                onChange={(sc) => {
+                  setSizeChart(sc);
+                  markDirty();
+                }}
+                productTitle={title}
+              />
+            </section>
+
+            {/* 8. Shipping Specs */}
             <section className="p-6 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Shipping</h3>
 

@@ -1,3 +1,4 @@
+import { createRequire } from "module";
 import { logger } from "@/lib/logging/logger";
 
 export interface ProcessedImageResult {
@@ -9,18 +10,27 @@ export interface ProcessedImageResult {
   fileSize: number;
 }
 
-async function loadSharp() {
+// Resilient Sharp loader using createRequire for native C++ bindings on Node
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function loadSharp(): any {
   try {
-    const sharpModule = await import("sharp");
-    const sharpFn = sharpModule.default || sharpModule;
-    if (typeof sharpFn === "function") {
-      return sharpFn;
+    const req = createRequire(import.meta.url);
+    const sharp = req("sharp");
+    if (typeof sharp === "function") {
+      return sharp;
     }
-    return null;
-  } catch (err) {
-    logger.warn("Sharp native module not available, falling back to direct upload", "ImageProcessor", err);
-    return null;
+  } catch {
+    try {
+      const dynamicReq = eval("require");
+      const sharp = dynamicReq("sharp");
+      if (typeof sharp === "function") {
+        return sharp;
+      }
+    } catch {
+      // Graceful fallback
+    }
   }
+  return null;
 }
 
 /**
@@ -33,7 +43,7 @@ export async function convertToWebP(
   options: { quality?: number; maxWidth?: number } = {}
 ): Promise<ProcessedImageResult> {
   try {
-    const sharp = await loadSharp();
+    const sharp = loadSharp();
 
     if (sharp) {
       const quality = options.quality || 85;

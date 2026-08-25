@@ -14,9 +14,12 @@ import {
   Minus,
   Check,
   ChevronDown,
+  Ruler,
 } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { getMediaUrl } from "@/lib/media/media-url";
+import { SizeGuideModal } from "@/components/products/SizeGuideModal";
+import type { SizeChartData } from "@/components/admin/products/SizeChartEditor";
 
 interface ProductDetailViewProps {
   product: {
@@ -30,6 +33,7 @@ interface ProductDetailViewProps {
     base_price: number;
     compare_at_price: number | null;
     sku: string;
+    size_chart?: SizeChartData | null;
     product_variants?: {
       id: string;
       title: string;
@@ -104,6 +108,7 @@ export function ProductDetailView({
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     variants.length > 0 ? (variants[0]?.id || null) : null
   );
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const activeVariant = variants.find((v) => v.id === selectedVariantId) || null;
   const currentPrice = activeVariant ? activeVariant.price : product.base_price;
@@ -339,9 +344,19 @@ export function ProductDetailView({
           {/* Variant Selector (If Any) */}
           {variants.length > 0 && (
             <div className="space-y-3 pt-2">
-              <span className="text-xs font-mono-meta uppercase tracking-wider text-[#141312] font-semibold block">
-                Select Size / Specification:
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono-meta uppercase tracking-wider text-[#141312] font-semibold block">
+                  Select Size / Specification:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSizeGuide(true)}
+                  className="inline-flex items-center space-x-1.5 text-xs text-[#9e472a] hover:text-[#7d361f] font-mono-meta uppercase tracking-wider font-bold underline transition-colors cursor-pointer"
+                >
+                  <Ruler className="w-3.5 h-3.5" />
+                  <span>Size Guide</span>
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {variants.map((v) => {
                   const vStock = v.inventory?.[0]
@@ -370,6 +385,20 @@ export function ProductDetailView({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Simple Product Size Guide Link if Available */}
+          {variants.length === 0 && Boolean(product.size_chart) && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSizeGuide(true)}
+                className="inline-flex items-center space-x-1.5 text-xs text-[#9e472a] hover:text-[#7d361f] font-mono-meta uppercase tracking-wider font-bold underline transition-colors cursor-pointer"
+              >
+                <Ruler className="w-3.5 h-3.5" />
+                <span>View Size Guide & Measurements</span>
+              </button>
             </div>
           )}
 
@@ -720,6 +749,15 @@ export function ProductDetailView({
           </div>
         </div>
       )}
+
+      {/* Size Guide Modal */}
+      <SizeGuideModal
+        isOpen={showSizeGuide}
+        onClose={() => setShowSizeGuide(false)}
+        productTitle={product.title}
+        sizeChart={product.size_chart}
+        selectedSize={activeVariant?.title || activeVariant?.option_1_value}
+      />
     </div>
   );
 }

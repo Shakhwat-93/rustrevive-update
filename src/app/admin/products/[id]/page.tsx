@@ -138,6 +138,7 @@ export default function EditProductPage() {
           images: mappedImages,
           options: optionsList.length > 0 ? optionsList : [{ id: "opt-1", name: "Size", values: ["S", "M", "L", "XL"] }],
           variants: mappedVariants,
+          size_chart: p.size_chart || undefined,
         });
       } catch (err: unknown) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to load product");

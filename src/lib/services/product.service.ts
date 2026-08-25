@@ -45,6 +45,34 @@ export interface CreateProductInput {
   media_ids?: string[];
   variants?: ProductVariantInput[];
   initial_inventory?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  size_chart?: any;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function encodeSizeChart(description?: string | null, sizeChart?: any): string | null {
+  let cleanDesc = description || "";
+  cleanDesc = cleanDesc.replace(/<!-- SIZE_CHART_JSON:[\s\S]*?-->/g, "").trim();
+  if (sizeChart && sizeChart.mode && sizeChart.mode !== "none") {
+    cleanDesc = `${cleanDesc}\n<!-- SIZE_CHART_JSON: ${JSON.stringify(sizeChart)} -->`;
+  }
+  return cleanDesc || null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractSizeChart(description?: string | null): { cleanDescription: string | null; sizeChart: any | null } {
+  if (!description) return { cleanDescription: null, sizeChart: null };
+  const match = description.match(/<!-- SIZE_CHART_JSON:\s*([\s\S]*?)\s*-->/);
+  if (match && match[1]) {
+    try {
+      const sizeChart = JSON.parse(match[1]);
+      const cleanDescription = description.replace(/<!-- SIZE_CHART_JSON:[\s\S]*?-->/g, "").trim();
+      return { cleanDescription: cleanDescription || null, sizeChart };
+    } catch {
+      // ignore parse error
+    }
+  }
+  return { cleanDescription: description, sizeChart: null };
 }
 
 export interface ProductQueryFilters {
@@ -238,7 +266,12 @@ export class ProductService {
       return null;
     }
 
-    return data;
+    const { cleanDescription, sizeChart } = extractSizeChart(data.description);
+    return {
+      ...data,
+      description: cleanDescription,
+      size_chart: sizeChart,
+    };
   }
 
   /**
@@ -262,7 +295,12 @@ export class ProductService {
       throw new NotFoundError(`Product with ID ${id} not found.`);
     }
 
-    return data;
+    const { cleanDescription, sizeChart } = extractSizeChart(data.description);
+    return {
+      ...data,
+      description: cleanDescription,
+      size_chart: sizeChart,
+    };
   }
 
   /**
@@ -314,12 +352,14 @@ export class ProductService {
     }
 
     // 2. Insert main Product row
+    const finalDescription = encodeSizeChart(input.description, input.size_chart);
+
     const { data: product, error: prodErr } = await supabase
       .from("products")
       .insert({
         title: input.title,
         slug,
-        description: input.description || null,
+        description: finalDescription,
         short_description: input.short_description || null,
         status: input.status || "DRAFT",
         product_type: input.product_type || "Physical",
@@ -414,12 +454,18 @@ export class ProductService {
     const supabase = createAdminClient();
 
     // Strip non-table properties
-    const { media_ids: _media_ids, variants, initial_inventory, ...productFields } = input;
+    const { media_ids: _media_ids, variants, initial_inventory, size_chart, ...productFields } = input;
+
+    let finalDescription = productFields.description;
+    if (size_chart !== undefined || productFields.description !== undefined) {
+      finalDescription = encodeSizeChart(productFields.description, size_chart) ?? undefined;
+    }
 
     const { data: product, error } = await supabase
       .from("products")
       .update({
         ...productFields,
+        ...(finalDescription !== undefined ? { description: finalDescription } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
