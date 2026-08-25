@@ -408,13 +408,13 @@ export class ProductService {
   }
 
   /**
-   * Update product attributes
+   * Update product attributes, variants, inventory, and media
    */
   public static async updateProduct(id: string, input: Partial<CreateProductInput>) {
     const supabase = createAdminClient();
 
     // Strip non-table properties
-    const { media_ids: _media_ids, variants: _variants, initial_inventory: _initial_inventory, ...productFields } = input;
+    const { media_ids: _media_ids, variants, initial_inventory, ...productFields } = input;
 
     const { data: product, error } = await supabase
       .from("products")
@@ -428,6 +428,98 @@ export class ProductService {
 
     if (error || !product) {
       throw new NotFoundError(`Product with ID ${id} not found.`);
+    }
+
+    // Sync Variants and Inventory if provided
+    if (input.has_variants && variants && variants.length > 0) {
+      for (const variant of variants) {
+        // Find if variant already exists
+        const { data: existingVar } = await supabase
+          .from("product_variants")
+          .select("id")
+          .eq("product_id", id)
+          .eq("sku", variant.sku)
+          .maybeSingle();
+
+        if (existingVar) {
+          // Update existing variant
+          await supabase
+            .from("product_variants")
+            .update({
+              title: variant.title,
+              price: variant.price,
+              compare_at_price: variant.compare_at_price || null,
+              cost_price: variant.cost_price || null,
+              weight: variant.weight || null,
+              is_active: true,
+            })
+            .eq("id", existingVar.id);
+
+          // Update existing inventory
+          if (variant.initial_quantity !== undefined) {
+            await supabase
+              .from("inventory")
+              .update({ quantity: variant.initial_quantity })
+              .eq("product_id", id)
+              .eq("variant_id", existingVar.id);
+          }
+        } else {
+          // Insert new variant
+          const { data: newVar } = await supabase
+            .from("product_variants")
+            .insert({
+              product_id: id,
+              title: variant.title,
+              sku: variant.sku,
+              barcode: variant.barcode || null,
+              price: variant.price,
+              compare_at_price: variant.compare_at_price || null,
+              cost_price: variant.cost_price || null,
+              option_1_name: variant.option_1_name || null,
+              option_1_value: variant.option_1_value || null,
+              option_2_name: variant.option_2_name || null,
+              option_2_value: variant.option_2_value || null,
+              option_3_name: variant.option_3_name || null,
+              option_3_value: variant.option_3_value || null,
+              weight: variant.weight || null,
+            })
+            .select()
+            .single();
+
+          if (newVar) {
+            await supabase.from("inventory").insert({
+              product_id: id,
+              variant_id: (newVar as { id: string }).id,
+              quantity: variant.initial_quantity || 0,
+              reserved_quantity: 0,
+              low_stock_threshold: 3,
+            });
+          }
+        }
+      }
+    } else if (initial_inventory !== undefined) {
+      // Sync single product inventory
+      const { data: invRow } = await supabase
+        .from("inventory")
+        .select("id")
+        .eq("product_id", id)
+        .is("variant_id", null)
+        .maybeSingle();
+
+      if (invRow) {
+        await supabase
+          .from("inventory")
+          .update({ quantity: initial_inventory })
+          .eq("id", invRow.id);
+      } else {
+        await supabase.from("inventory").insert({
+          product_id: id,
+          variant_id: null,
+          quantity: initial_inventory,
+          reserved_quantity: 0,
+          low_stock_threshold: 5,
+        });
+      }
     }
 
     return product;
