@@ -37,9 +37,10 @@ interface CategoryRecord {
 interface ShopCatalogViewProps {
   initialProducts: ProductRecord[];
   categories: CategoryRecord[];
-  pageTitle: string;
+  pageTitle?: string;
   pageSubtitle?: string;
   activeCategorySlug?: string;
+  showHeader?: boolean;
 }
 
 export function ShopCatalogView({
@@ -48,6 +49,7 @@ export function ShopCatalogView({
   pageTitle,
   pageSubtitle,
   activeCategorySlug,
+  showHeader = false,
 }: ShopCatalogViewProps) {
   const { addItem, openCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>(activeCategorySlug || "ALL");
@@ -94,21 +96,23 @@ export function ShopCatalogView({
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 space-y-8">
-      {/* 1. Minimal Editorial Header */}
-      <div className="text-center max-w-2xl mx-auto space-y-2.5 pt-4">
-        <span className="text-[11px] font-mono-meta uppercase tracking-[0.25em] text-[#9e472a] font-semibold">
-          Authentic Garments
-        </span>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif uppercase tracking-wider text-[#141312]">
-          {pageTitle}
-        </h1>
-        {pageSubtitle && (
-          <p className="text-xs sm:text-sm font-sans-ui text-[#5c574e] leading-relaxed">
-            {pageSubtitle}
-          </p>
-        )}
-      </div>
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 space-y-6">
+      {/* 1. Minimal Editorial Header (Optional) */}
+      {showHeader && pageTitle && (
+        <div className="text-center max-w-2xl mx-auto space-y-2.5 pt-4">
+          <span className="text-[11px] font-mono-meta uppercase tracking-[0.25em] text-[#9e472a] font-semibold">
+            Authentic Garments
+          </span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif uppercase tracking-wider text-[#141312]">
+            {pageTitle}
+          </h1>
+          {pageSubtitle && (
+            <p className="text-xs sm:text-sm font-sans-ui text-[#5c574e] leading-relaxed">
+              {pageSubtitle}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 2. Filter & Sort Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4 border-y border-[#ded7c8]">
