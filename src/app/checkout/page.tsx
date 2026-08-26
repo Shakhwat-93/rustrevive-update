@@ -15,6 +15,9 @@ import {
   Tag,
   X,
   CheckCircle2,
+  Plus,
+  Minus,
+  Trash2,
 } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 
@@ -37,7 +40,15 @@ interface PricingSummary {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, clearCart, appliedCoupon, applyCoupon, removeCoupon } = useCart();
+  const {
+    items,
+    clearCart,
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
+    updateQuantity,
+    removeItem,
+  } = useCart();
 
   // Stable idempotency key for this checkout attempt
   const [idempotencyKey] = useState(() => `rr_checkout_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
@@ -439,44 +450,93 @@ export default function CheckoutPage() {
               </div>
 
               {/* Items Preview */}
-              <div className="max-h-72 overflow-y-auto space-y-3.5 pr-1 divide-y divide-[#f0ebe1]">
+              <div className="max-h-80 overflow-y-auto space-y-3.5 pr-1 divide-y divide-[#f0ebe1]">
                 {items.map((item) => (
                   <div
                     key={`${item.productId}-${item.variantId || "default"}`}
-                    className="pt-3 first:pt-0 flex space-x-3"
+                    className="pt-3 first:pt-0 space-y-2"
                   >
-                    <div className="w-14 h-16 bg-[#f7f5f0] border border-[#e8e2d5] relative overflow-hidden flex-shrink-0">
-                      {item.imageUrl ? (
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.title}
-                          fill
-                          className="object-cover"
-                          sizes="60px"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[#8E8B82] text-[9px] font-mono">
-                          R&R
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between py-0.5">
-                      <div>
-                        <h4 className="text-xs font-serif uppercase tracking-wider text-[#141312] line-clamp-1">
-                          {item.title}
-                        </h4>
-                        {item.variantTitle && (
-                          <p className="text-[10px] font-mono text-[#8E8B82]">
-                            {item.variantTitle}
-                          </p>
+                    <div className="flex space-x-3">
+                      <div className="w-14 h-16 bg-[#f7f5f0] border border-[#e8e2d5] relative overflow-hidden flex-shrink-0">
+                        {item.imageUrl ? (
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.title}
+                            fill
+                            className="object-cover"
+                            sizes="60px"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#8E8B82] text-[9px] font-mono">
+                            R&R
+                          </div>
                         )}
-                        <p className="text-[11px] font-mono text-[#6E6B63] mt-0.5">
-                          Qty: {item.quantity} × ৳{item.price.toLocaleString()}
+                      </div>
+                      <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
+                        <div>
+                          <h4 className="text-xs font-serif uppercase tracking-wider text-[#141312] line-clamp-1">
+                            {item.title}
+                          </h4>
+                          {item.variantTitle && (
+                            <p className="text-[10px] font-mono text-[#8E8B82] truncate">
+                              {item.variantTitle}
+                            </p>
+                          )}
+                          <p className="text-[11px] font-mono text-[#6E6B63] mt-0.5">
+                            ৳{item.price.toLocaleString()} each
+                          </p>
+                        </div>
+                        <p className="text-xs font-mono font-semibold text-[#141312] self-end">
+                          ৳{(item.price * item.quantity).toLocaleString()}
                         </p>
                       </div>
-                      <p className="text-xs font-mono font-semibold text-[#141312] self-end">
-                        ৳{(item.price * item.quantity).toLocaleString()}
-                      </p>
+                    </div>
+
+                    {/* Quantity Stepper & Remove Action */}
+                    <div className="flex items-center justify-between pt-1 border-t border-[#fbf9f5]">
+                      <div className="flex items-center border border-[#ded7c8] bg-white rounded-xs">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (item.quantity > 1) {
+                              updateQuantity(item.productId, item.variantId, item.quantity - 1);
+                            } else {
+                              removeItem(item.productId, item.variantId);
+                            }
+                          }}
+                          className="p-1.5 text-[#5c574e] hover:text-[#141312] hover:bg-[#f4eee3] transition-colors cursor-pointer"
+                          title={item.quantity > 1 ? "Decrease quantity" : "Remove item"}
+                          aria-label="Decrease quantity"
+                        >
+                          {item.quantity > 1 ? (
+                            <Minus className="w-3 h-3" />
+                          ) : (
+                            <Trash2 className="w-3 h-3 text-rose-600" />
+                          )}
+                        </button>
+                        <span className="px-2.5 text-[11px] font-mono font-bold text-[#141312] min-w-5 text-center">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}
+                          className="p-1.5 text-[#5c574e] hover:text-[#141312] hover:bg-[#f4eee3] transition-colors cursor-pointer"
+                          title="Increase quantity"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.productId, item.variantId)}
+                        className="text-[10px] font-mono text-[#8E8B82] hover:text-rose-600 uppercase tracking-wider transition-colors cursor-pointer flex items-center space-x-1"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove</span>
+                      </button>
                     </div>
                   </div>
                 ))}
