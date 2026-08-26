@@ -19,6 +19,7 @@ import {
   ChevronRight,
   X,
   LogOut,
+  Star,
 } from "lucide-react";
 
 export const ADMIN_NAV_ITEMS = [
@@ -28,6 +29,7 @@ export const ADMIN_NAV_ITEMS = [
   { label: "Inventory", href: "/admin/inventory", icon: Boxes },
   { label: "Fulfillment", href: "/admin/fulfillment", icon: Megaphone },
   { label: "Customers", href: "/admin/customers", icon: Users },
+  { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Content", href: "/admin/content/homepage", icon: LayoutTemplate },
   { label: "Discounts", href: "/admin/discounts", icon: Percent },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
