@@ -17,7 +17,7 @@ export interface CreateOrderAddressInput {
   phone: string;
   addressLine1: string;
   addressLine2?: string;
-  city: string;
+  city?: string;
   area?: string;
   postalCode?: string;
   country?: string;
@@ -107,9 +107,9 @@ export class OrderService {
         phone: input.shippingAddress.phone,
         address_line_1: input.shippingAddress.addressLine1,
         address_line_2: input.shippingAddress.addressLine2,
-        city: input.shippingAddress.city,
-        area: input.shippingAddress.area,
-        postal_code: input.shippingAddress.postalCode,
+        city: input.shippingAddress.city || "Bangladesh",
+        area: input.shippingAddress.area || undefined,
+        postal_code: input.shippingAddress.postalCode || undefined,
         country: input.shippingAddress.country || "Bangladesh",
       });
     }

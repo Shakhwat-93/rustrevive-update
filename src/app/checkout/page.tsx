@@ -61,10 +61,6 @@ export default function CheckoutPage() {
     phone: "",
     email: "",
     addressLine1: "",
-    addressLine2: "",
-    city: "Dhaka",
-    area: "",
-    postalCode: "",
     customerNotes: "",
   });
 
@@ -142,8 +138,8 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.name.trim() || !form.phone.trim() || !form.addressLine1.trim() || !form.city.trim()) {
-      setErrorMsg("Please fill in all required shipping and contact fields.");
+    if (!form.name.trim() || !form.phone.trim() || !form.addressLine1.trim()) {
+      setErrorMsg("Please fill in your name, phone number, and delivery address.");
       return;
     }
 
@@ -171,10 +167,7 @@ export default function CheckoutPage() {
           fullName: form.name.trim(),
           phone: form.phone.trim(),
           addressLine1: form.addressLine1.trim(),
-          addressLine2: form.addressLine2.trim() || undefined,
-          city: form.city.trim(),
-          area: form.area.trim() || undefined,
-          postalCode: form.postalCode.trim() || undefined,
+          city: "Bangladesh",
           country: "Bangladesh",
         },
         shippingMethodId: selectedShippingId || undefined,
@@ -311,71 +304,25 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Step 2: Shipping Address */}
+            {/* Step 2: Delivery Address */}
             <div className="bg-white border border-[#e8e2d5] p-6 shadow-sm">
               <h2 className="text-xs font-mono uppercase tracking-[0.2em] font-semibold text-[#141312] border-b border-[#f0ebe1] pb-3 mb-4">
-                2. Shipping Address
+                2. Delivery Address
               </h2>
 
               <div className="space-y-4">
                 <div>
                   <label className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6B63] mb-1">
-                    Street Address & House Details *
+                    Full Delivery Address (House / Road / Area / City) *
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
                     required
                     value={form.addressLine1}
                     onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
+                    placeholder="e.g. House 14, Road 7, Sector 3, Uttara, Dhaka / Village, Thana, District..."
+                    className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors resize-none"
                   />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6B63] mb-1">
-                       City / District *
-                    </label>
-                    <select
-                      value={form.city}
-                      onChange={(e) => setForm({ ...form, city: e.target.value })}
-                      className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
-                    >
-                      <option value="Dhaka">Dhaka</option>
-                      <option value="Chittagong">Chittagong</option>
-                      <option value="Sylhet">Sylhet</option>
-                      <option value="Rajshahi">Rajshahi</option>
-                      <option value="Khulna">Khulna</option>
-                      <option value="Barisal">Barisal</option>
-                      <option value="Rangpur">Rangpur</option>
-                      <option value="Mymensingh">Mymensingh</option>
-                      <option value="Other">Other Region</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6B63] mb-1">
-                      Area / Thana
-                    </label>
-                    <input
-                      type="text"
-                      value={form.area}
-                      onChange={(e) => setForm({ ...form, area: e.target.value })}
-                      className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6B63] mb-1">
-                      Postal Code
-                    </label>
-                    <input
-                      type="text"
-                      value={form.postalCode}
-                      onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
-                      className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
-                    />
-                  </div>
                 </div>
 
                 <div>
@@ -386,6 +333,7 @@ export default function CheckoutPage() {
                     rows={2}
                     value={form.customerNotes}
                     onChange={(e) => setForm({ ...form, customerNotes: e.target.value })}
+                    placeholder="e.g. Please call before delivery or deliver after 3 PM..."
                     className="w-full px-3.5 py-2 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors resize-none"
                   />
                 </div>
