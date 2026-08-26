@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ShieldCheck,
   Truck,
   Banknote,
   Lock,
@@ -610,14 +609,6 @@ export default function CheckoutPage() {
                   </>
                 )}
               </button>
-
-              <div className="pt-2 text-center text-[10px] font-mono text-[#8E8B82] space-y-1">
-                <p className="flex items-center justify-center space-x-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 inline" />
-                  <span>Verified 256-Bit Encrypted Commerce Pipeline</span>
-                </p>
-                <p>Delivery inspection guaranteed across Bangladesh.</p>
-              </div>
             </div>
           </div>
         </form>
