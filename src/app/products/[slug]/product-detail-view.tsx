@@ -548,7 +548,7 @@ export function ProductDetailView({
                     src={imgUrl}
                     alt={`${product.title} view ${idx + 1}`}
                     fill
-                    className="object-cover"
+                    className="object-contain p-0.5"
                     sizes="80px"
                   />
                 </button>
@@ -558,7 +558,7 @@ export function ProductDetailView({
 
           {/* Primary Main Image Frame with Desktop Zoom */}
           <div
-            className="relative w-full aspect-[3/4] max-h-[580px] sm:max-h-[640px] bg-[#f4eee3] border border-[#ded7c8] overflow-hidden flex items-center justify-center cursor-crosshair group rounded-xs"
+            className="relative w-full aspect-[3/4] max-h-[580px] sm:max-h-[640px] bg-[#f4eee3] border border-[#ded7c8] overflow-hidden flex items-center justify-center cursor-crosshair group rounded-xs p-2 sm:p-4"
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMoveZoom}
@@ -569,7 +569,7 @@ export function ProductDetailView({
                 alt={product.title}
                 fill
                 priority
-                className={`object-cover object-center transition-transform duration-300 ${
+                className={`object-contain object-center transition-transform duration-300 ${
                   isZoomed ? "scale-125" : "scale-100"
                 }`}
                 style={
