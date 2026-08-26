@@ -20,11 +20,20 @@ import {
   X,
   LogOut,
   Star,
+  Clock,
 } from "lucide-react";
 
-export const ADMIN_NAV_ITEMS = [
+export interface AdminNavItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+}
+
+export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: "3" },
+  { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
+  { label: "Incomplete Checkouts", href: "/admin/incomplete-checkouts", icon: Clock },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Inventory", href: "/admin/inventory", icon: Boxes },
   { label: "Fulfillment", href: "/admin/fulfillment", icon: Megaphone },

@@ -43,6 +43,7 @@ export default function CheckoutPage() {
   const {
     items,
     clearCart,
+    cartSessionId,
     appliedCoupon,
     applyCoupon,
     removeCoupon,
@@ -52,6 +53,19 @@ export default function CheckoutPage() {
 
   // Stable idempotency key for this checkout attempt
   const [idempotencyKey] = useState(() => `rr_checkout_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
+
+  // Stable unique checkout session identifier for abandonment tracking
+  const [checkoutSessionId] = useState(() => {
+    if (typeof window !== "undefined") {
+      let sid = sessionStorage.getItem("rustrevive_checkout_session_id");
+      if (!sid) {
+        sid = `chk_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+        sessionStorage.setItem("rustrevive_checkout_session_id", sid);
+      }
+      return sid;
+    }
+    return `chk_${Date.now()}`;
+  });
 
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [selectedShippingId, setSelectedShippingId] = useState<string>("");
@@ -128,6 +142,76 @@ export default function CheckoutPage() {
     loadCheckoutData();
   }, [items, selectedShippingId, appliedCoupon, form.email]);
 
+  // Debounced Incomplete Checkout Progress Tracking
+  useEffect(() => {
+    if (!checkoutSessionId || !cartSessionId || items.length === 0) return;
+
+    // Only track if customer has entered at least some details
+    const hasEnteredInfo = Boolean(
+      form.name.trim() ||
+        form.phone.trim() ||
+        form.email.trim() ||
+        form.addressLine1.trim() ||
+        form.customerNotes.trim()
+    );
+
+    if (!hasEnteredInfo) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch("/api/checkout/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            checkoutSessionId,
+            cartSessionId,
+            customerName: form.name.trim() || undefined,
+            customerPhone: form.phone.trim() || undefined,
+            customerEmail: form.email.trim() || undefined,
+            shippingAddress: form.addressLine1.trim() || undefined,
+            city: "Bangladesh",
+            items: items.map((i) => ({
+              productId: i.productId,
+              variantId: i.variantId || null,
+              title: i.title,
+              variantTitle: i.variantTitle || null,
+              sku: i.sku,
+              price: i.price,
+              quantity: i.quantity,
+              imageUrl: i.imageUrl || null,
+            })),
+            subtotal: pricing?.subtotal || items.reduce((s, i) => s + i.price * i.quantity, 0),
+            discountTotal: pricing?.discountTotal || appliedCoupon?.discountAmount || 0,
+            shippingTotal: pricing?.shippingTotal || 0,
+            estimatedTotal:
+              pricing?.grandTotal ||
+              items.reduce((s, i) => s + i.price * i.quantity, 0) -
+                (appliedCoupon?.discountAmount || 0),
+            shippingMethodId: selectedShippingId || undefined,
+            couponCode: appliedCoupon?.code || undefined,
+            customerNotes: form.customerNotes.trim() || undefined,
+          }),
+        });
+      } catch {
+        // Non-blocking tracking failure
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [
+    checkoutSessionId,
+    cartSessionId,
+    items,
+    form.name,
+    form.phone,
+    form.email,
+    form.addressLine1,
+    form.customerNotes,
+    selectedShippingId,
+    appliedCoupon,
+    pricing,
+  ]);
+
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponInput.trim()) return;
@@ -185,6 +269,7 @@ export default function CheckoutPage() {
         customerNotes: form.customerNotes.trim() || undefined,
         paymentMethod: "CASH_ON_DELIVERY",
         idempotencyKey,
+        checkoutSessionId,
       };
 
       const res = await fetch("/api/checkout/place-order", {

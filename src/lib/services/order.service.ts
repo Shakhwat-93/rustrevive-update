@@ -5,6 +5,7 @@ import { CustomerService } from "@/lib/services/customer.service";
 import { InventoryService } from "@/lib/services/inventory.service";
 import { DiscountService } from "@/lib/services/discount.service";
 import { NotificationService } from "@/lib/services/notification.service";
+import { IncompleteCheckoutService } from "@/lib/services/incomplete-checkout.service";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
@@ -37,6 +38,7 @@ export interface PlaceOrderInput {
   customerNotes?: string;
   paymentMethod?: "CASH_ON_DELIVERY";
   idempotencyKey?: string;
+  checkoutSessionId?: string;
 }
 
 export interface OrderQueryFilters {
@@ -216,6 +218,13 @@ export class OrderService {
     }).catch((notifErr) => {
       logger.warn("Failed to dispatch order notification", "OrderService", { error: notifErr });
     });
+
+    // 8. Atomically mark Incomplete Checkout as CONVERTED
+    if (input.checkoutSessionId) {
+      IncompleteCheckoutService.markConverted(input.checkoutSessionId, order.id).catch((convErr) => {
+        logger.warn("Failed to convert incomplete checkout session", "OrderService", { error: convErr });
+      });
+    }
 
     return {
       ...order,

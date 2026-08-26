@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { CartProvider } from "@/context/cart-context";
 import { CartDrawer } from "@/components/cart/cart-drawer";
+import { CartRecoveryBanner } from "@/components/cart/cart-recovery-banner";
 import "@/styles/globals.css";
 
 const cormorantGaramond = Cormorant_Garamond({
@@ -72,6 +73,7 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <CartDrawer />
+          <CartRecoveryBanner />
         </CartProvider>
       </body>
     </html>
