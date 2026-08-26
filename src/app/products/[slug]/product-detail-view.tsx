@@ -16,7 +16,6 @@ import {
   Ruler,
   MessageCircle,
   ShieldCheck,
-  Sparkles,
   AlertCircle,
   X,
   Share2,
@@ -563,12 +562,6 @@ export function ProductDetailView({
                 </span>
               )}
             </div>
-          </div>
-
-          {/* Active Promo Highlights */}
-          <div className="p-3 bg-[#fbf9f5] border border-[#ded7c8] rounded-xs flex items-center space-x-2.5 text-xs font-mono-meta text-[#5c574e]">
-            <Sparkles className="w-4 h-4 text-[#9e472a] shrink-0" />
-            <span>Use promo code <strong>REVIVE10</strong> at checkout for 10% instant savings.</span>
           </div>
 
           {/* Real-Time Stock Indicator */}
