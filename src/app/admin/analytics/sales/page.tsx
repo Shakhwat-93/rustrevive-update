@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AdminPageLayout } from "@/components/admin/layout/admin-page-layout";
 import { KPICard } from "@/components/admin/ui/kpi-card";
+import { useAdminRealtime } from "@/context/admin-realtime-context";
 
 interface SalesReportData {
   dateRange: {
@@ -158,6 +159,7 @@ interface SalesReportData {
 }
 
 export default function SalesReportPage() {
+  const { onNewOrder, onOrderUpdate } = useAdminRealtime();
   const [data, setData] = useState<SalesReportData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -182,8 +184,8 @@ export default function SalesReportPage() {
 
   // Fetch Report Data
   const loadReport = useCallback(async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const params = new URLSearchParams();
       if (preset !== "custom") {
         params.set("preset", preset);
@@ -196,7 +198,6 @@ export default function SalesReportPage() {
       if (selectedStatus !== "ALL") params.set("status", selectedStatus);
       if (selectedPayment !== "ALL") params.set("paymentMethod", selectedPayment);
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
-
       params.set("page", page.toString());
       params.set("limit", limit.toString());
       params.set("sortBy", sortBy);
@@ -217,6 +218,22 @@ export default function SalesReportPage() {
   useEffect(() => {
     loadReport();
   }, [loadReport]);
+
+  // Realtime updates for sales report
+  useEffect(() => {
+    const unsubNew = onNewOrder(() => {
+      loadReport();
+    });
+
+    const unsubUpdate = onOrderUpdate(() => {
+      loadReport();
+    });
+
+    return () => {
+      unsubNew();
+      unsubUpdate();
+    };
+  }, [onNewOrder, onOrderUpdate, loadReport]);
 
   // Handle Export Download
   const handleExportCSV = () => {

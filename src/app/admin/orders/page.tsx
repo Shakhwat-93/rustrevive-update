@@ -13,6 +13,7 @@ import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminEmptyState } from "@/components/admin/ui/admin-empty-state";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { DataTable, type ColumnDef } from "@/components/admin/ui/data-table";
+import { useAdminRealtime, type RealtimeOrderPayload } from "@/context/admin-realtime-context";
 import type { OrderStatus, PaymentStatus } from "@/types/database.types";
 
 interface OrderRow {
@@ -40,6 +41,7 @@ const STATUS_TABS: { label: string; value: string }[] = [
 ];
 
 export default function AdminOrdersPage() {
+  const { onNewOrder, onOrderUpdate, onOrderDelete } = useAdminRealtime();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -68,6 +70,58 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Realtime order synchronization
+  useEffect(() => {
+    const unsubNew = onNewOrder((newOrder: RealtimeOrderPayload) => {
+      // Check if matches active filter tab
+      if (activeTab === "ALL" || activeTab === newOrder.status) {
+        const formatted: OrderRow = {
+          id: newOrder.id,
+          order_number: newOrder.order_number,
+          customer_name: newOrder.customer_name,
+          customer_phone: newOrder.customer_phone,
+          status: newOrder.status,
+          payment_status: newOrder.payment_status,
+          fulfillment_status: newOrder.fulfillment_status,
+          payment_method: newOrder.payment_method,
+          grand_total: newOrder.grand_total,
+          created_at: newOrder.created_at,
+          order_items: newOrder.order_items || [],
+        };
+
+        setOrders((prev) => [formatted, ...prev.filter((o) => o.id !== formatted.id)]);
+        setTotalCount((prev) => prev + 1);
+      }
+    });
+
+    const unsubUpdate = onOrderUpdate((updatedOrder: RealtimeOrderPayload) => {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === updatedOrder.id
+            ? {
+                ...o,
+                status: updatedOrder.status,
+                payment_status: updatedOrder.payment_status,
+                fulfillment_status: updatedOrder.fulfillment_status,
+                grand_total: updatedOrder.grand_total,
+              }
+            : o
+        )
+      );
+    });
+
+    const unsubDelete = onOrderDelete((deletedOrderId: string) => {
+      setOrders((prev) => prev.filter((o) => o.id !== deletedOrderId));
+      setTotalCount((prev) => Math.max(0, prev - 1));
+    });
+
+    return () => {
+      unsubNew();
+      unsubUpdate();
+      unsubDelete();
+    };
+  }, [activeTab, onNewOrder, onOrderUpdate, onOrderDelete]);
 
   const columns: ColumnDef<OrderRow>[] = [
     {

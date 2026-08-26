@@ -19,6 +19,7 @@ import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminCard } from "@/components/admin/ui/admin-card";
 import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { useAdminDialog } from "@/context/admin-dialog-context";
+import { useAdminRealtime } from "@/context/admin-realtime-context";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
 import type { OrderStatus, PaymentStatus, DeliveryStatus } from "@/types/database.types";
 
@@ -84,6 +85,7 @@ interface PageProps {
 export default function AdminOrderDetailPage(props: PageProps) {
   const resolvedParams = use(props.params);
   const orderId = resolvedParams.id;
+  const { onOrderUpdate } = useAdminRealtime();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,6 +113,19 @@ export default function AdminOrderDetailPage(props: PageProps) {
   useEffect(() => {
     fetchOrder();
   }, [fetchOrder]);
+
+  // Realtime synchronization for this order
+  useEffect(() => {
+    const unsubscribe = onOrderUpdate((updated) => {
+      if (updated.id === orderId) {
+        fetchOrder();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [orderId, onOrderUpdate, fetchOrder]);
 
   const { showToast, confirm } = useAdminDialog();
 

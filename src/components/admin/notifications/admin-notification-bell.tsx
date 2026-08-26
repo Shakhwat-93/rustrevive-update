@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { usePushNotification } from "@/lib/push/use-push-notification";
+import { useAdminRealtime } from "@/context/admin-realtime-context";
 
 export interface AdminNotification {
   id: string;
@@ -64,37 +65,16 @@ function getNotificationIcon(type: string) {
 
 export function AdminNotificationBell() {
   const router = useRouter();
+  const { soundEnabled, toggleSound, onNotification } = useAdminRealtime();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState<"ALL" | "ORDERS" | "INVENTORY" | "REVIEWS">("ALL");
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [hasNewAlertAnimation, setHasNewAlertAnimation] = useState(false);
 
   const { isSupported, isSubscribed, subscribe } = usePushNotification();
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Play subtle sound on new notification
-  const playNotificationSound = useCallback(() => {
-    if (!soundEnabled || typeof window === "undefined") return;
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.setValueAtTime(880.0, audioCtx.currentTime + 0.08); // A5
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.35);
-    } catch {
-      // Audio context may be restricted by browser policy
-    }
-  }, [soundEnabled]);
 
   // Fetch initial notifications
   const fetchNotifications = useCallback(async () => {
@@ -117,72 +97,35 @@ export function AdminNotificationBell() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Supabase Realtime Subscription
+  // Realtime notification listener via central context
   useEffect(() => {
-    const supabase = createClient();
+    const unsubscribe = onNotification((notif) => {
+      const formatted: AdminNotification = {
+        id: notif.id,
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        resource_type: notif.resource_type,
+        resource_id: notif.resource_id,
+        is_read: notif.is_read,
+        created_at: notif.created_at,
+        targetUrl: notif.targetUrl || (notif.resource_type === "orders" && notif.resource_id
+          ? `/admin/orders/${notif.resource_id}`
+          : notif.resource_type === "reviews"
+          ? `/admin/reviews`
+          : `/admin/orders`),
+      };
 
-    const channel = supabase
-      .channel("admin-notifications-feed")
-      .on(
-        "postgres_changes" as any,
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-        },
-        (payload: any) => {
-          const newRow = payload.new;
-          if (!newRow) return;
-
-          const formatted: AdminNotification = {
-            id: newRow.id,
-            type: newRow.type,
-            title: newRow.title,
-            message: newRow.message,
-            resource_type: newRow.resource_type,
-            resource_id: newRow.resource_id,
-            is_read: newRow.is_read,
-            created_at: newRow.created_at,
-            targetUrl:
-              newRow.resource_type === "orders" && newRow.resource_id
-                ? `/admin/orders/${newRow.resource_id}`
-                : newRow.resource_type === "reviews"
-                ? `/admin/reviews`
-                : `/admin/orders`,
-          };
-
-          setNotifications((prev) => [formatted, ...prev.filter((n) => n.id !== formatted.id)]);
-          setUnreadCount((prev) => prev + 1);
-          setHasNewAlertAnimation(true);
-          setTimeout(() => setHasNewAlertAnimation(false), 2000);
-          playNotificationSound();
-        }
-      )
-      .on(
-        "postgres_changes" as any,
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-        },
-        (payload: any) => {
-          const updated = payload.new;
-          if (!updated) return;
-
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === updated.id ? { ...n, is_read: updated.is_read } : n))
-          );
-          if (updated.is_read) {
-            setUnreadCount((prev) => Math.max(0, prev - 1));
-          }
-        }
-      )
-      .subscribe();
+      setNotifications((prev) => [formatted, ...prev.filter((n) => n.id !== formatted.id)]);
+      setUnreadCount((prev) => prev + 1);
+      setHasNewAlertAnimation(true);
+      setTimeout(() => setHasNewAlertAnimation(false), 2000);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
-  }, [playNotificationSound]);
+  }, [onNotification]);
 
   // Close dropdown on outside click
   useEffect(() => {

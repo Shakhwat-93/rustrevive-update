@@ -19,6 +19,7 @@ import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { AdminCard } from "@/components/admin/ui/admin-card";
 import { AdminButton } from "@/components/admin/ui/admin-button";
 import { TableSkeleton } from "@/components/admin/ui/admin-skeleton";
+import { useAdminRealtime } from "@/context/admin-realtime-context";
 
 interface DashboardMetrics {
   summary: {
@@ -53,6 +54,7 @@ interface DashboardMetrics {
 }
 
 export default function AdminDashboardPage() {
+  const { onNewOrder, onOrderUpdate } = useAdminRealtime();
   const [dateRange, setDateRange] = useState("7d");
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,22 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  // Realtime updates for dashboard metrics & recent orders
+  useEffect(() => {
+    const unsubNew = onNewOrder(() => {
+      loadDashboard();
+    });
+
+    const unsubUpdate = onOrderUpdate(() => {
+      loadDashboard();
+    });
+
+    return () => {
+      unsubNew();
+      unsubUpdate();
+    };
+  }, [onNewOrder, onOrderUpdate, loadDashboard]);
 
   const summary = metrics?.summary || {
     totalRevenue: 0,

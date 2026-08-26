@@ -9,6 +9,7 @@ import { AdminButton } from "@/components/admin/ui/admin-button";
 import { AdminEmptyState } from "@/components/admin/ui/admin-empty-state";
 import { TableSkeleton } from "@/components/admin/ui/admin-skeleton";
 import { useAdminDialog } from "@/context/admin-dialog-context";
+import { useAdminRealtime } from "@/context/admin-realtime-context";
 
 interface InventoryRow {
   id: string;
@@ -30,6 +31,7 @@ interface RawInventoryItem {
 }
 
 export default function AdminInventoryPage() {
+  const { onNewOrder, onOrderUpdate } = useAdminRealtime();
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
@@ -66,6 +68,22 @@ export default function AdminInventoryPage() {
   useEffect(() => {
     loadInventory();
   }, [loadInventory]);
+
+  // Realtime updates for inventory on new orders or cancellations
+  useEffect(() => {
+    const unsubNew = onNewOrder(() => {
+      loadInventory();
+    });
+
+    const unsubUpdate = onOrderUpdate(() => {
+      loadInventory();
+    });
+
+    return () => {
+      unsubNew();
+      unsubUpdate();
+    };
+  }, [onNewOrder, onOrderUpdate, loadInventory]);
 
   const handleAdjust = async (id: string, delta: number) => {
     try {
