@@ -9,8 +9,6 @@ import {
   Heart,
   ShoppingBag,
   Zap,
-  Truck,
-  RotateCcw,
   Plus,
   Minus,
   Check,
@@ -814,32 +812,12 @@ export function ProductDetailView({
               <Zap className="w-4 h-4 text-[#ded7c8] fill-[#ded7c8]" />
               <span>
                 {isOutOfStock
-                  ? "Sold Out — Out of Stock"
+                  ? "Sold Out"
                   : isBuyingNow
                   ? "Proceeding to Checkout..."
-                  : `Buy Now — ৳${(currentPrice * quantity).toLocaleString()} (Cash on Delivery)`}
+                  : "Buy Now"}
               </span>
             </button>
-          </div>
-
-          {/* Value Badges */}
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#ded7c8] text-xs font-mono-meta text-[#5c574e]">
-            <div className="flex items-center space-x-2">
-              <Truck className="w-4 h-4 text-[#9e472a] shrink-0" />
-              <span>Nationwide 2-4 Days Delivery</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RotateCcw className="w-4 h-4 text-[#9e472a] shrink-0" />
-              <span>7-Day Return / Exchange</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>100% Authentic Quality</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-[#9e472a] shrink-0" />
-              <span>Cash on Delivery Available</span>
-            </div>
           </div>
 
           {/* Collapsible Accordions (Description, Sizing, Delivery, Returns) */}
