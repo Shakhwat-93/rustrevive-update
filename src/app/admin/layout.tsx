@@ -15,8 +15,8 @@ export default function AdminLayout({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <AdminDialogProvider>
-      <AdminRealtimeProvider>
+    <AdminRealtimeProvider>
+      <AdminDialogProvider>
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased flex flex-col lg:flex-row overflow-x-hidden">
           {/* Persistent / Collapsible Sidebar & Mobile Drawer */}
           <AdminSidebar
@@ -38,7 +38,7 @@ export default function AdminLayout({
             </main>
           </div>
         </div>
-      </AdminRealtimeProvider>
-    </AdminDialogProvider>
+      </AdminDialogProvider>
+    </AdminRealtimeProvider>
   );
 }

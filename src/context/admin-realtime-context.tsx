@@ -435,10 +435,23 @@ export function AdminRealtimeProvider({ children }: { children: React.ReactNode 
   );
 }
 
+const noopUnsubscribe = () => {};
+const fallbackContext: AdminRealtimeContextType = {
+  isConnected: false,
+  lastSyncTime: null,
+  soundEnabled: true,
+  toggleSound: () => {},
+  playAlertSound: () => {},
+  unreadNotificationCount: 0,
+  setUnreadNotificationCount: () => {},
+  onNewOrder: () => noopUnsubscribe,
+  onOrderUpdate: () => noopUnsubscribe,
+  onOrderDelete: () => noopUnsubscribe,
+  onNotification: () => noopUnsubscribe,
+  forceReconcile: async () => {},
+};
+
 export function useAdminRealtime() {
   const context = useContext(AdminRealtimeContext);
-  if (!context) {
-    throw new Error("useAdminRealtime must be used within an AdminRealtimeProvider");
-  }
-  return context;
+  return context || fallbackContext;
 }
