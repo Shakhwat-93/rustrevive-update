@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
   RefreshCw,
 } from "lucide-react";
@@ -84,8 +85,25 @@ export default function AdminAnalyticsPage() {
         </div>
       }
     >
-      {/* 1. Summary Metrics Banner (2 cols on mobile, 4 on lg) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      <div className="space-y-6">
+        {/* Top Navigation Tabs */}
+        <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
+          <Link
+            href="/admin/analytics"
+            className="px-3.5 py-1.5 text-xs font-mono font-semibold bg-[#141312] text-white rounded-lg shadow-2xs"
+          >
+            Overview & Funnel
+          </Link>
+          <Link
+            href="/admin/analytics/sales"
+            className="px-3.5 py-1.5 text-xs font-mono font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            Sales Report
+          </Link>
+        </div>
+
+        {/* 1. Summary Metrics Banner (2 cols on mobile, 4 on lg) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <AdminCard title="Gross Sales">
           <div className="space-y-0.5 sm:space-y-1">
             <span className="text-lg sm:text-2xl font-bold font-mono text-slate-900 block truncate">
@@ -222,6 +240,7 @@ export default function AdminAnalyticsPage() {
             </div>
           </AdminCard>
         </div>
+      </div>
       </div>
     </AdminPageLayout>
   );

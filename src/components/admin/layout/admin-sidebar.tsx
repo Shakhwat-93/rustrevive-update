@@ -21,6 +21,7 @@ import {
   LogOut,
   Star,
   Clock,
+  TrendingUp,
 } from "lucide-react";
 
 export interface AdminNavItem {
@@ -42,6 +43,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Content", href: "/admin/content/homepage", icon: LayoutTemplate },
   { label: "Discounts", href: "/admin/discounts", icon: Percent },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Sales Report", href: "/admin/analytics/sales", icon: TrendingUp },
   { label: "Media", href: "/admin/media", icon: ImageIcon },
   { label: "Shipping Rates", href: "/admin/settings/shipping", icon: Settings },
 ];
