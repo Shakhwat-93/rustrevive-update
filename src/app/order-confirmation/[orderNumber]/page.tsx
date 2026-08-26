@@ -14,6 +14,9 @@ import {
 import { OrderService } from "@/lib/services/order.service";
 import { OrderConfirmationTracker } from "@/components/analytics/order-confirmation-tracker";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ orderNumber: string }>;
 }

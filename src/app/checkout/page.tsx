@@ -305,11 +305,14 @@ export default function CheckoutPage() {
 
       const orderNumber = data.data.order_number;
       setIsOrderSuccess(true);
-      clearCart();
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("rustrevive_checkout_session_id");
+        clearCart();
+        window.location.replace(`/order-confirmation/${encodeURIComponent(orderNumber)}`);
+      } else {
+        clearCart();
+        router.replace(`/order-confirmation/${orderNumber}`);
       }
-      router.replace(`/order-confirmation/${orderNumber}`);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message || "An unexpected error occurred while placing your order.");
       setIsSubmitting(false);
@@ -317,31 +320,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // 1. Premium Full-Screen Processing State (when submitting or waiting for confirmation redirect)
-  if (isOrderSuccess || (isSubmitting && items.length === 0)) {
-    return (
-      <div className="min-h-[75vh] flex flex-col items-center justify-center px-4 py-20 text-center">
-        <div className="w-16 h-16 rounded-full bg-[#141312] text-white flex items-center justify-center mb-6 shadow-xl animate-pulse">
-          <Lock className="w-7 h-7 text-[#e8a382]" />
-        </div>
-        <span className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#9e472a] font-semibold">
-          Finalizing Transaction
-        </span>
-        <h2 className="text-2xl sm:text-3xl font-serif uppercase tracking-wider text-[#141312] mt-2">
-          Placing Your Order...
-        </h2>
-        <p className="text-xs font-mono text-[#6E6B63] mt-2 max-w-sm">
-          Please wait a moment while we secure your handcrafted selection and generate your receipt. Do not close or refresh this page.
-        </p>
-        <div className="mt-6 flex items-center space-x-2 text-xs font-mono text-[#9e472a]">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Redirecting to Order Confirmation...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Only show Empty Cart if the user genuinely arrived at /checkout with an empty cart and is NOT in the middle of submitting or success!
+  // Only show Empty Cart if the user genuinely arrived at /checkout with an empty cart and is NOT submitting
   if (items.length === 0 && !isSubmitting && !isOrderSuccess) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-20 text-center">
