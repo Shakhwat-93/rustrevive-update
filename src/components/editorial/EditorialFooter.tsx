@@ -27,9 +27,6 @@ export function EditorialFooter() {
           {/* Brand Column (4 Cols) */}
           <div className="md:col-span-4 space-y-3">
             <Logo variant="light" size="md" />
-            <p className="text-xs font-sans-ui text-[#5c574e] max-w-xs leading-relaxed">
-              Timeless garments crafted from raw denim, heavy cotton, and vegetable-tanned leather.
-            </p>
           </div>
 
           {/* SHOP COLUMN (3 Cols) */}
@@ -84,8 +81,7 @@ export function EditorialFooter() {
 
         {/* Bottom Minimal Copyright */}
         <div className="pt-6 border-t border-[#ded7c8] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono-meta uppercase tracking-wider text-[#8c8577]">
-          <p suppressHydrationWarning>© {new Date().getFullYear()} Rust &amp; Revive</p>
-          <p>BDT (৳)</p>
+          <p suppressHydrationWarning>© {new Date().getFullYear()} Rust &amp; Revive. All rights reserved.</p>
         </div>
       </div>
     </footer>
