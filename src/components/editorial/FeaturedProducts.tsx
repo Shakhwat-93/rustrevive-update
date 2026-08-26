@@ -256,12 +256,12 @@ export function FeaturedProducts({
                     zIndex,
                     opacity,
                   }}
-                  className={`absolute transition-all duration-500 ease-out cursor-pointer w-[260px] sm:w-[280px] md:w-[300px] ${
+                  className={`absolute transition-all duration-500 ease-out cursor-pointer w-[280px] sm:w-[300px] md:w-[320px] ${
                     isActive ? "pointer-events-auto" : "pointer-events-auto hover:opacity-100"
                   }`}
                 >
                   <div
-                    className={`bg-white/95 backdrop-blur-xs rounded-[28px] p-4 sm:p-5 border transition-all duration-300 flex flex-col justify-between min-h-[440px] sm:min-h-[470px] ${
+                    className={`bg-white/95 backdrop-blur-xs rounded-[28px] p-4 sm:p-5 border transition-all duration-300 flex flex-col justify-between min-h-[440px] sm:min-h-[470px] overflow-hidden ${
                       isActive
                         ? "border-[#d8ccb8] shadow-[0_20px_50px_rgba(158,71,42,0.12)] bg-white"
                         : "border-[#ebe4d6] shadow-[0_10px_30px_rgba(0,0,0,0.04)]"
@@ -296,7 +296,7 @@ export function FeaturedProducts({
                           src={product.imageUrl}
                           alt={product.imageAlt || product.title}
                           fill
-                          sizes="(max-width: 640px) 260px, (max-width: 1024px) 280px, 300px"
+                          sizes="(max-width: 640px) 280px, (max-width: 1024px) 300px, 320px"
                           className="object-contain transition-transform duration-500 group-hover:scale-105"
                           priority={isActive}
                         />
@@ -336,15 +336,15 @@ export function FeaturedProducts({
                     </div>
 
                     {/* Price & Action Row */}
-                    <div className="flex items-center justify-between pt-3 border-t border-[#f0eadc] gap-2">
-                      <div className="flex flex-col">
+                    <div className="flex items-center justify-between pt-3 border-t border-[#f0eadc] gap-2 min-w-0">
+                      <div className="flex flex-col min-w-0">
                         <div className="flex items-baseline space-x-1.5 font-mono-meta">
-                          <span className="text-base sm:text-lg font-bold text-[#141312]">
+                          <span className="text-sm sm:text-base md:text-lg font-bold text-[#141312]">
                             ৳{product.priceCents.toLocaleString()}
                           </span>
                           {product.compareAtPriceCents &&
                             product.compareAtPriceCents > product.priceCents && (
-                              <span className="text-xs text-[#8c8577] line-through">
+                              <span className="text-[11px] sm:text-xs text-[#8c8577] line-through">
                                 ৳{product.compareAtPriceCents.toLocaleString()}
                               </span>
                             )}
@@ -361,7 +361,7 @@ export function FeaturedProducts({
                         isActive ? (
                           <button
                             onClick={(e) => handleAddToCart(product, e)}
-                            className="bg-[#9e472a] hover:bg-[#873c22] text-white px-3.5 py-2 rounded-xl text-xs font-mono-meta font-semibold uppercase tracking-wider flex items-center space-x-1.5 shadow-xs transition-all cursor-pointer shrink-0"
+                            className="bg-[#9e472a] hover:bg-[#873c22] text-white px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-mono-meta font-semibold uppercase tracking-wider flex items-center space-x-1 sm:space-x-1.5 shadow-xs transition-all cursor-pointer shrink-0"
                           >
                             {isAdded ? (
                               <>
@@ -378,13 +378,13 @@ export function FeaturedProducts({
                         ) : (
                           <button
                             onClick={(e) => handleAddToCart(product, e)}
-                            className="w-9 h-9 rounded-xl bg-[#f4eee3] hover:bg-[#9e472a] text-[#5c574e] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#f4eee3] hover:bg-[#9e472a] text-[#5c574e] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                             aria-label={`Add ${product.title} to cart`}
                           >
                             {isAdded ? (
-                              <Check className="w-4 h-4 text-emerald-600" />
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
                             ) : (
-                              <ShoppingBag className="w-4 h-4" />
+                              <ShoppingBag className="w-3.5 h-3.5" />
                             )}
                           </button>
                         )
