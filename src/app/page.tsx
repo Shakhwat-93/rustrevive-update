@@ -3,15 +3,10 @@ import { ProductService } from "@/lib/services/product.service";
 import { EditorialHeader } from "@/components/navigation/editorial-header";
 import { CampaignHero } from "@/components/editorial/CampaignHero";
 import { EditorialCollectionGrid } from "@/components/editorial/EditorialCollectionGrid";
-import { StatementSection } from "@/components/editorial/StatementSection";
 import { FeaturedProducts } from "@/components/editorial/FeaturedProducts";
 import { BrandStory } from "@/components/editorial/BrandStory";
-import { LookbookGallery } from "@/components/editorial/LookbookGallery";
 import { CategoryExplorer } from "@/components/editorial/CategoryExplorer";
-import { ManifestoSection } from "@/components/editorial/ManifestoSection";
 import { EverydayEssentials } from "@/components/editorial/EverydayEssentials";
-import { TrustGrid } from "@/components/editorial/TrustGrid";
-import { CommunitySection } from "@/components/editorial/CommunitySection";
 import { EditorialFooter } from "@/components/editorial/EditorialFooter";
 import { getMediaUrl } from "@/lib/media/media-url";
 import type { ProductItem } from "@/data/homepage.data";
@@ -205,14 +200,9 @@ export default async function HomePage() {
           />
         )}
         {isEnabled("collections") && <EditorialCollectionGrid />}
-        {isEnabled("statement") && <StatementSection />}
         {isEnabled("brand_story") && <BrandStory />}
-        {isEnabled("lookbook") && <LookbookGallery />}
         {isEnabled("category_explorer") && <CategoryExplorer />}
-        {isEnabled("manifesto") && <ManifestoSection />}
         {isEnabled("everyday_essentials") && <EverydayEssentials products={liveProducts} />}
-        {isEnabled("trust_grid") && <TrustGrid />}
-        {isEnabled("community") && <CommunitySection />}
       </main>
 
       {/* Editorial Footer */}
