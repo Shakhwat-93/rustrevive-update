@@ -196,8 +196,6 @@ export default async function HomePage() {
       {/* Dynamic Main Flow Controlled by CMS Studio and Live Supabase DB */}
       <main className="flex-1 flex flex-col w-full">
         {isEnabled("hero") && <CampaignHero slides={cmsConfig.heroSlides} />}
-        {isEnabled("collections") && <EditorialCollectionGrid />}
-        {isEnabled("statement") && <StatementSection />}
         {isEnabled("featured_products") && (
           <FeaturedProducts
             label={featuredSection?.label || "OUR COLLECTION"}
@@ -206,6 +204,8 @@ export default async function HomePage() {
             products={merchandisedProducts}
           />
         )}
+        {isEnabled("collections") && <EditorialCollectionGrid />}
+        {isEnabled("statement") && <StatementSection />}
         {isEnabled("brand_story") && <BrandStory />}
         {isEnabled("lookbook") && <LookbookGallery />}
         {isEnabled("category_explorer") && <CategoryExplorer />}

@@ -49,18 +49,19 @@ export function FeaturedProducts({
   const [addedMap, setAddedMap] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Touch Swipe State
+  // Touch & Drag Swipe State
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
+  const isDragging = useRef<boolean>(false);
   const totalProducts = products.length;
 
-  // Auto-Slide (5 seconds)
+  // Auto-Slide (3.5 seconds) - automatically slides when not paused or touched
   useEffect(() => {
     if (totalProducts <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % totalProducts);
-    }, 5000);
+    }, 3500);
 
     return () => clearInterval(timer);
   }, [totalProducts, isPaused]);
@@ -75,26 +76,32 @@ export function FeaturedProducts({
     setActiveIndex((prev) => (prev - 1 + totalProducts) % totalProducts);
   }, [totalProducts]);
 
-  // Touch Handlers
+  // Touch Handlers with fast response
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsPaused(true);
+    isDragging.current = true;
     touchStartX.current = e.targetTouches[0]?.clientX || 0;
+    touchEndX.current = touchStartX.current;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging.current) return;
     touchEndX.current = e.targetTouches[0]?.clientX || 0;
   };
 
   const handleTouchEnd = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
     const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 45) {
+    if (Math.abs(diff) > 35) {
       if (diff > 0) {
         handleNext();
       } else {
         handlePrev();
       }
     }
-    setTimeout(() => setIsPaused(false), 2000);
+    // Resume auto-slide after brief pause
+    setTimeout(() => setIsPaused(false), 2500);
   };
 
   // Keyboard navigation
@@ -187,20 +194,22 @@ export function FeaturedProducts({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Navigation Arrows */}
+          {/* Navigation Arrows (Desktop/Tablet only, hidden on mobile) */}
           {totalProducts > 1 && (
             <>
               <button
+                type="button"
                 onClick={handlePrev}
-                className="absolute left-1 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/90 backdrop-blur-md border border-[#e5ded0] shadow-md flex items-center justify-center text-[#141312] hover:bg-[#141312] hover:text-white hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                className="hidden md:flex absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-30 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/90 backdrop-blur-md border border-[#e5ded0] shadow-md items-center justify-center text-[#141312] hover:bg-[#141312] hover:text-white hover:scale-105 active:scale-95 transition-all cursor-pointer"
                 aria-label="Previous product"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
 
               <button
+                type="button"
                 onClick={handleNext}
-                className="absolute right-1 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/90 backdrop-blur-md border border-[#e5ded0] shadow-md flex items-center justify-center text-[#141312] hover:bg-[#141312] hover:text-white hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                className="hidden md:flex absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-30 w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/90 backdrop-blur-md border border-[#e5ded0] shadow-md items-center justify-center text-[#141312] hover:bg-[#141312] hover:text-white hover:scale-105 active:scale-95 transition-all cursor-pointer"
                 aria-label="Next product"
               >
                 <ChevronRight className="w-5 h-5" />
