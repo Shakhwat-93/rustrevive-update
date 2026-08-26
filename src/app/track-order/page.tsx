@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Loader2,
   ShieldCheck,
+  Package,
 } from "lucide-react";
 import type { DeliveryStatus, OrderStatus } from "@/types/database.types";
 
@@ -31,6 +32,7 @@ interface TrackingResult {
     created_at: string;
     created_by: string;
   }[];
+  allOrders?: TrackingResult[];
 }
 
 const STEP_ORDER: { key: string; label: string }[] = [
@@ -48,11 +50,13 @@ export default function TrackOrderPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [result, setResult] = useState<TrackingResult | null>(null);
+  const [ordersList, setOrdersList] = useState<TrackingResult[]>([]);
+  const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
 
   const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orderNumber.trim() || !phone.trim()) {
-      setErrorMsg("Please enter both your Order Reference and Phone Number.");
+    if (!orderNumber.trim() && !phone.trim()) {
+      setErrorMsg("Please enter either your Order Reference or Phone Number.");
       return;
     }
 
@@ -60,13 +64,15 @@ export default function TrackOrderPage() {
       setLoading(true);
       setErrorMsg(null);
       setResult(null);
+      setOrdersList([]);
+      setSelectedOrderIndex(0);
 
       const res = await fetch("/api/tracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderNumber: orderNumber.trim(),
-          phone: phone.trim(),
+          orderNumber: orderNumber.trim() || undefined,
+          phone: phone.trim() || undefined,
         }),
       });
 
@@ -75,6 +81,11 @@ export default function TrackOrderPage() {
         setErrorMsg(json?.error?.message || "Order not found with provided credentials.");
       } else {
         setResult(json.data);
+        if (Array.isArray(json.data?.allOrders) && json.data.allOrders.length > 0) {
+          setOrdersList(json.data.allOrders);
+        } else {
+          setOrdersList([json.data]);
+        }
       }
     } catch {
       setErrorMsg("Failed to connect to tracking server. Please check your internet connection.");
@@ -93,7 +104,8 @@ export default function TrackOrderPage() {
     return 0;
   };
 
-  const currentStep = result ? getStepIndex(result) : 0;
+  const activeResult = ordersList[selectedOrderIndex] || result;
+  const currentStep = activeResult ? getStepIndex(activeResult) : 0;
 
   return (
     <div className="min-h-screen bg-[#fbf9f5] text-[#141312] pt-24 pb-20 px-4 sm:px-6 lg:px-12">
@@ -107,17 +119,17 @@ export default function TrackOrderPage() {
             Track Your Consignment
           </h1>
           <p className="text-xs font-mono text-[#6E6B63] max-w-md mx-auto">
-            Enter your order reference and the phone number used during checkout to inspect live parcel movements.
+            Enter your Order Reference or Phone Number to inspect live parcel movements and dispatch history.
           </p>
         </div>
 
-        {/* 2-Factor Lookup Form */}
+        {/* Lookup Form */}
         <div className="bg-white border border-[#ded7c8] p-6 sm:p-8 shadow-sm">
           <form onSubmit={handleTrack} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6B63] mb-1.5 font-semibold">
-                  Order Reference *
+                  Order Reference
                 </label>
                 <input
                   type="text"
@@ -125,13 +137,12 @@ export default function TrackOrderPage() {
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs font-mono border border-[#ded7c8] bg-[#faf6f0] focus:border-[#141312] focus:bg-white outline-none uppercase transition-colors"
-                  required
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-mono uppercase tracking-wider text-[#6E6B63] mb-1.5 font-semibold">
-                  Phone Number *
+                  Phone Number
                 </label>
                 <input
                   type="tel"
@@ -139,10 +150,13 @@ export default function TrackOrderPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs font-mono border border-[#ded7c8] bg-[#faf6f0] focus:border-[#141312] focus:bg-white outline-none transition-colors"
-                  required
                 />
               </div>
             </div>
+
+            <p className="text-[11px] font-mono text-[#8E8B82] italic">
+              * Track using either your Order Reference OR Phone Number (or both).
+            </p>
 
             {errorMsg && (
               <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-mono flex items-start space-x-2">
@@ -154,7 +168,7 @@ export default function TrackOrderPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-[#141312] text-[#fbf9f5] font-mono text-xs uppercase tracking-[0.2em] font-semibold flex items-center justify-center space-x-2 hover:bg-[#9e472a] transition-colors disabled:opacity-50"
+              className="w-full py-3.5 bg-[#141312] text-[#fbf9f5] font-mono text-xs uppercase tracking-[0.2em] font-semibold flex items-center justify-center space-x-2 hover:bg-[#9e472a] transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
             >
               {loading ? (
                 <>
@@ -171,31 +185,58 @@ export default function TrackOrderPage() {
           </form>
         </div>
 
+        {/* Multi-order Switcher (if customer has multiple orders under this phone) */}
+        {ordersList.length > 1 && (
+          <div className="bg-white border border-[#ded7c8] p-4 shadow-sm space-y-2 font-mono text-xs">
+            <p className="text-[#6E6B63] font-semibold text-[11px] uppercase tracking-wider">
+              Multiple Orders Found ({ordersList.length}):
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {ordersList.map((ord, idx) => (
+                <button
+                  key={ord.orderNumber}
+                  type="button"
+                  onClick={() => setSelectedOrderIndex(idx)}
+                  className={`px-3 py-1.5 border text-xs font-mono transition-colors cursor-pointer flex items-center space-x-1.5 ${
+                    selectedOrderIndex === idx
+                      ? "bg-[#141312] text-white border-[#141312]"
+                      : "bg-[#faf6f0] text-slate-700 border-[#ded7c8] hover:bg-slate-100"
+                  }`}
+                >
+                  <Package className="w-3.5 h-3.5" />
+                  <span>{ord.orderNumber}</span>
+                  <span className="text-[10px] opacity-75">({ord.status})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Live Tracking Result */}
-        {result && (
+        {activeResult && (
           <div className="bg-white border border-[#ded7c8] p-6 sm:p-8 space-y-8 shadow-sm">
             {/* Header Status Summary */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#f0ebe1] pb-6 gap-4">
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-mono font-bold text-[#9e472a]">
-                    {result.orderNumber}
+                    {activeResult.orderNumber}
                   </span>
                   <span className="text-[11px] font-mono px-2 py-0.5 bg-[#faf6f0] border border-[#e8e2d5] text-[#141312]">
-                    {result.status}
+                    {activeResult.status}
                   </span>
                 </div>
                 <p className="text-xs font-mono text-[#6E6B63] mt-1">
-                  Recipient: {result.customerName} • Destination: {result.shippingDestination}
+                  Recipient: {activeResult.customerName} • Destination: {activeResult.shippingDestination}
                 </p>
               </div>
 
-              {result.fulfillment && (
+              {activeResult.fulfillment && (
                 <div className="sm:text-right text-xs font-mono space-y-0.5">
                   <p className="text-[#6E6B63]">Courier Partner:</p>
-                  <p className="font-semibold text-[#141312]">{result.fulfillment.courierName}</p>
+                  <p className="font-semibold text-[#141312]">{activeResult.fulfillment.courierName}</p>
                   <p className="text-[11px] text-[#9e472a] font-bold">
-                    ID: {result.fulfillment.trackingNumber}
+                    ID: {activeResult.fulfillment.trackingNumber}
                   </p>
                 </div>
               )}
@@ -250,17 +291,23 @@ export default function TrackOrderPage() {
               </h3>
 
               <div className="space-y-3">
-                {result.timeline?.map((event) => (
-                  <div key={event.id} className="flex items-start space-x-3 text-xs font-mono">
-                    <div className="w-2 h-2 rounded-full bg-[#9e472a] mt-1.5 flex-shrink-0" />
-                    <div className="flex-1 border-b border-[#f0ebe1] pb-2 last:border-0">
-                      <p className="font-semibold text-[#141312]">{event.message}</p>
-                      <span className="text-[10px] text-[#8E8B82]">
-                        {new Date(event.created_at).toLocaleString()} • Logged by {event.created_by}
-                      </span>
+                {activeResult.timeline && activeResult.timeline.length > 0 ? (
+                  activeResult.timeline.map((event) => (
+                    <div key={event.id} className="flex items-start space-x-3 text-xs font-mono">
+                      <div className="w-2 h-2 rounded-full bg-[#9e472a] mt-1.5 flex-shrink-0" />
+                      <div className="flex-1 border-b border-[#f0ebe1] pb-2 last:border-0">
+                        <p className="font-semibold text-[#141312]">{event.message}</p>
+                        <span className="text-[10px] text-[#8E8B82]">
+                          {new Date(event.created_at).toLocaleString()} • Logged by {event.created_by}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-xs font-mono text-[#8E8B82] italic">
+                    Order confirmed and recorded. Live transit milestones will update as the courier scans your package.
+                  </p>
+                )}
               </div>
             </div>
 

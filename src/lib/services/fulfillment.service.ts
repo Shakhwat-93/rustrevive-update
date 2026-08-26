@@ -315,13 +315,21 @@ export class FulfillmentService {
   }
 
   /**
-   * Secure 2-Factor Customer Order Tracking Lookup (Order Number + Phone)
+   * Customer Order Tracking Lookup (by Order Reference OR Phone Number)
    */
-  public static async getTrackingByOrderNumberAndPhone(orderNumber: string, rawPhone: string) {
+  public static async getTracking(params: { orderNumber?: string; phone?: string }) {
     const supabase = createAdminClient();
-    const cleanPhone = rawPhone.trim().replace(/[^0-9]/g, "");
+    const orderNumber = params.orderNumber?.trim().toUpperCase();
+    const rawPhone = params.phone?.trim();
+    const cleanPhone = rawPhone ? rawPhone.replace(/[^0-9]/g, "") : "";
 
-    const { data: order, error } = await supabase
+    if (!orderNumber && !cleanPhone) {
+      throw new ValidationError("Please provide an Order Reference or a Phone Number.", {
+        fields: ["orderNumber", "phone"],
+      });
+    }
+
+    let query = supabase
       .from("orders")
       .select(`
         id,
@@ -336,38 +344,76 @@ export class FulfillmentService {
         fulfillments(*, courier_providers(name, code)),
         order_events(*)
       `)
-      .eq("order_number", orderNumber.trim().toUpperCase())
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
-    if (error || !order) {
-      throw new NotFoundError("No order found matching the provided order reference number.");
+    if (orderNumber) {
+      query = query.eq("order_number", orderNumber);
+    } else if (cleanPhone) {
+      // Match by phone number suffix (last 8-11 digits) to tolerate prefixes (+880, 0, etc.)
+      const phoneLookup = cleanPhone.length > 8 ? cleanPhone.slice(-8) : cleanPhone;
+      query = query.ilike("customer_phone", `%${phoneLookup}%`);
     }
 
-    // Verify Phone Number Match
-    const orderPhoneClean = order.customer_phone.replace(/[^0-9]/g, "");
-    if (!orderPhoneClean.endsWith(cleanPhone.slice(-8)) && !cleanPhone.endsWith(orderPhoneClean.slice(-8))) {
-      throw new ValidationError("The phone number does not match this order reference.", { field: "phone" });
+    const { data: orders, error } = await query;
+
+    if (error || !orders || orders.length === 0) {
+      throw new NotFoundError(
+        orderNumber
+          ? `No order found for reference "${orderNumber}".`
+          : `No orders found for phone number "${rawPhone}".`
+      );
     }
 
-    const latestFulfillment = order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments[0] : null;
+    // Format matching orders
+    const formattedOrders = orders.map((order) => {
+      const latestFulfillment =
+        order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments[0] : null;
+
+      return {
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        status: order.status,
+        fulfillmentStatus: order.fulfillment_status,
+        paymentStatus: order.payment_status,
+        placedAt: order.created_at,
+        shippingDestination:
+          (order.shipping_address_snapshot as { city?: string; area?: string })?.city ||
+          "Bangladesh",
+        fulfillment: latestFulfillment
+          ? {
+              trackingNumber: latestFulfillment.tracking_number,
+              status: latestFulfillment.status,
+              courierName: latestFulfillment.courier_providers?.name || "Rust & Revive Logistics",
+              updatedAt: latestFulfillment.updated_at,
+            }
+          : null,
+        timeline: order.order_events || [],
+      };
+    });
+
+    const primaryOrder = formattedOrders[0];
+    if (!primaryOrder) {
+      throw new NotFoundError("No matching order records found.");
+    }
 
     return {
-      orderNumber: order.order_number,
-      customerName: order.customer_name,
-      status: order.status,
-      fulfillmentStatus: order.fulfillment_status,
-      paymentStatus: order.payment_status,
-      placedAt: order.created_at,
-      shippingDestination: (order.shipping_address_snapshot as { city?: string; area?: string })?.city || "Bangladesh",
-      fulfillment: latestFulfillment
-        ? {
-            trackingNumber: latestFulfillment.tracking_number,
-            status: latestFulfillment.status,
-            courierName: latestFulfillment.courier_providers?.name || "Rust & Revive Logistics",
-            updatedAt: latestFulfillment.updated_at,
-          }
-        : null,
-      timeline: order.order_events || [],
+      orderNumber: primaryOrder.orderNumber,
+      customerName: primaryOrder.customerName,
+      status: primaryOrder.status,
+      fulfillmentStatus: primaryOrder.fulfillmentStatus,
+      paymentStatus: primaryOrder.paymentStatus,
+      placedAt: primaryOrder.placedAt,
+      shippingDestination: primaryOrder.shippingDestination,
+      fulfillment: primaryOrder.fulfillment,
+      timeline: primaryOrder.timeline,
+      allOrders: formattedOrders,
     };
+  }
+
+  /**
+   * Backward-compatible alias for getTracking
+   */
+  public static async getTrackingByOrderNumberAndPhone(orderNumber?: string, rawPhone?: string) {
+    return this.getTracking({ orderNumber, phone: rawPhone });
   }
 }
