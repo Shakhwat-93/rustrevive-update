@@ -6,6 +6,7 @@ import { InventoryService } from "@/lib/services/inventory.service";
 import { DiscountService } from "@/lib/services/discount.service";
 import { NotificationService } from "@/lib/services/notification.service";
 import { IncompleteCheckoutService } from "@/lib/services/incomplete-checkout.service";
+import { MarketingTrackingService } from "@/lib/services/marketing-tracking.service";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
@@ -225,6 +226,33 @@ export class OrderService {
         logger.warn("Failed to convert incomplete checkout session", "OrderService", { error: convErr });
       });
     }
+
+    // 9. Dispatch Server-Side Conversion Event to Meta CAPI & TikTok Events API (Non-blocking)
+    MarketingTrackingService.dispatchServerConversion({
+      eventId: `evt_order_${order.id}`,
+      eventName: "Purchase",
+      orderId: order.id,
+      orderNumber: order.order_number,
+      currency: "BDT",
+      value: pricingSummary.grandTotal,
+      customer: {
+        email: input.customer.email || null,
+        phone: input.customer.phone,
+        name: input.customer.name,
+        city: input.shippingAddress.city,
+      },
+      items: pricingSummary.items.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        title: item.productTitle,
+        sku: item.sku,
+        price: item.unitPrice,
+        quantity: item.quantity,
+      })),
+      sourceUrl: "https://rustrevive.store/checkout",
+    }).catch((capiErr) => {
+      logger.warn("Failed to dispatch server conversion event", "OrderService", { error: capiErr });
+    });
 
     return {
       ...order,

@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font
 import { CartProvider } from "@/context/cart-context";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { CartRecoveryBanner } from "@/components/cart/cart-recovery-banner";
+import { MarketingScripts } from "@/components/analytics/marketing-scripts";
 import "@/styles/globals.css";
 
 const cormorantGaramond = Cormorant_Garamond({
@@ -70,6 +71,7 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col font-sans bg-[#fbf9f5] text-[#141312] selection:bg-[#9e472a] selection:text-white"
       >
+        <MarketingScripts />
         <CartProvider>
           {children}
           <CartDrawer />

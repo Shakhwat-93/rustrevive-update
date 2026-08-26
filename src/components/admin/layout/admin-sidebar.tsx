@@ -22,6 +22,7 @@ import {
   Star,
   Clock,
   TrendingUp,
+  Radio,
 } from "lucide-react";
 
 export interface AdminNavItem {
@@ -46,6 +47,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Sales Report", href: "/admin/analytics/sales", icon: TrendingUp },
   { label: "Media", href: "/admin/media", icon: ImageIcon },
   { label: "Shipping Rates", href: "/admin/settings/shipping", icon: Settings },
+  { label: "Marketing & Pixels", href: "/admin/settings/marketing", icon: Radio },
 ];
 
 interface AdminSidebarProps {

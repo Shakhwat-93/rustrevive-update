@@ -519,6 +519,128 @@ export interface Database {
         };
         Relationships: [];
       };
+      marketing_tracking_settings: {
+        Row: {
+          id: string;
+          gtm_enabled: boolean;
+          gtm_container_id: string | null;
+          ga4_enabled: boolean;
+          ga4_measurement_id: string | null;
+          meta_pixel_enabled: boolean;
+          meta_pixel_id: string | null;
+          meta_capi_enabled: boolean;
+          meta_capi_access_token: string | null;
+          meta_test_event_code: string | null;
+          tiktok_pixel_enabled: boolean;
+          tiktok_pixel_id: string | null;
+          tiktok_events_api_enabled: boolean;
+          tiktok_events_api_access_token: string | null;
+          tiktok_test_event_code: string | null;
+          ecommerce_tracking_enabled: boolean;
+          debug_tracking_enabled: boolean;
+          consent_mode_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          gtm_enabled?: boolean;
+          gtm_container_id?: string | null;
+          ga4_enabled?: boolean;
+          ga4_measurement_id?: string | null;
+          meta_pixel_enabled?: boolean;
+          meta_pixel_id?: string | null;
+          meta_capi_enabled?: boolean;
+          meta_capi_access_token?: string | null;
+          meta_test_event_code?: string | null;
+          tiktok_pixel_enabled?: boolean;
+          tiktok_pixel_id?: string | null;
+          tiktok_events_api_enabled?: boolean;
+          tiktok_events_api_access_token?: string | null;
+          tiktok_test_event_code?: string | null;
+          ecommerce_tracking_enabled?: boolean;
+          debug_tracking_enabled?: boolean;
+          consent_mode_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          gtm_enabled?: boolean;
+          gtm_container_id?: string | null;
+          ga4_enabled?: boolean;
+          ga4_measurement_id?: string | null;
+          meta_pixel_enabled?: boolean;
+          meta_pixel_id?: string | null;
+          meta_capi_enabled?: boolean;
+          meta_capi_access_token?: string | null;
+          meta_test_event_code?: string | null;
+          tiktok_pixel_enabled?: boolean;
+          tiktok_pixel_id?: string | null;
+          tiktok_events_api_enabled?: boolean;
+          tiktok_events_api_access_token?: string | null;
+          tiktok_test_event_code?: string | null;
+          ecommerce_tracking_enabled?: boolean;
+          debug_tracking_enabled?: boolean;
+          consent_mode_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      server_analytics_logs: {
+        Row: {
+          id: string;
+          event_id: string;
+          event_name: string;
+          order_id: string | null;
+          provider: string;
+          status: string;
+          attempt_count: number;
+          payload: Json | null;
+          response_data: Json | null;
+          error_message: string | null;
+          created_at: string;
+          sent_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          event_name: string;
+          order_id?: string | null;
+          provider: string;
+          status?: string;
+          attempt_count?: number;
+          payload?: Json | null;
+          response_data?: Json | null;
+          error_message?: string | null;
+          created_at?: string;
+          sent_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          event_name?: string;
+          order_id?: string | null;
+          provider?: string;
+          status?: string;
+          attempt_count?: number;
+          payload?: Json | null;
+          response_data?: Json | null;
+          error_message?: string | null;
+          created_at?: string;
+          sent_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "server_analytics_logs_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       courier_providers: {
         Row: {
           id: string;

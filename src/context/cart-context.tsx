@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { AnalyticsTracker } from "@/lib/analytics/tracker";
 
 export interface CartItem {
   productId: string;
@@ -315,6 +316,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return updated;
     });
+
+    // Centralized Marketing Event: AddToCart
+    AnalyticsTracker.addToCart({
+      productId: item.productId,
+      variantId: item.variantId,
+      title: item.title,
+      price: item.price,
+      quantity,
+      sku: item.sku,
+    });
+
     setIsOpen(true);
   };
 
@@ -339,6 +351,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeItem = (productId: string, variantId?: string) => {
+    const itemToRemove = items.find((i) => i.productId === productId && i.variantId === variantId);
+    if (itemToRemove) {
+      // Centralized Marketing Event: RemoveFromCart
+      AnalyticsTracker.removeFromCart({
+        productId: itemToRemove.productId,
+        variantId: itemToRemove.variantId,
+        title: itemToRemove.title,
+        price: itemToRemove.price,
+        quantity: itemToRemove.quantity,
+        sku: itemToRemove.sku,
+      });
+    }
+
     setItems((prev) => {
       const updated = prev.filter((i) => !(i.productId === productId && i.variantId === variantId));
       if (appliedCoupon) {

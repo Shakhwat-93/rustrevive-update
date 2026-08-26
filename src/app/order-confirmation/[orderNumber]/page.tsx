@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { OrderService } from "@/lib/services/order.service";
+import { OrderConfirmationTracker } from "@/components/analytics/order-confirmation-tracker";
 
 interface PageProps {
   params: Promise<{ orderNumber: string }>;
@@ -52,6 +53,21 @@ export default async function OrderConfirmationPage(props: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#fbf9f5] text-[#141312] pt-24 pb-20 px-4 sm:px-6 lg:px-12">
+      <OrderConfirmationTracker
+        orderId={order.id}
+        orderNumber={order.order_number}
+        grandTotal={order.grand_total}
+        subtotal={order.subtotal}
+        discountTotal={order.discount_total}
+        shippingTotal={order.shipping_total}
+        items={items.map((i) => ({
+          productId: i.id,
+          title: i.product_title_snapshot,
+          sku: i.sku_snapshot,
+          price: i.unit_price,
+          quantity: i.quantity,
+        }))}
+      />
       <div className="max-w-3xl mx-auto">
         {/* Header Hero */}
         <div className="bg-white border border-[#ded7c8] p-8 text-center space-y-4 shadow-sm">

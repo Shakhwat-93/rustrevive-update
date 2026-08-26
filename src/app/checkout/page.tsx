@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCart } from "@/context/cart-context";
+import { AnalyticsTracker } from "@/lib/analytics/tracker";
 
 interface ShippingMethod {
   id: string;
@@ -74,6 +75,7 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOrderSuccess, setIsOrderSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const hasInitiatedRef = React.useRef(false);
 
   // Coupon Form State
   const [couponInput, setCouponInput] = useState("");
@@ -130,6 +132,22 @@ export default function CheckoutPage() {
         const sumData = await sumRes.json();
         if (sumRes.ok && sumData?.data) {
           setPricing(sumData.data);
+
+          // Centralized Marketing Event: InitiateCheckout (Fired once)
+          if (!hasInitiatedRef.current && items.length > 0) {
+            hasInitiatedRef.current = true;
+            AnalyticsTracker.initiateCheckout(
+              items.map((i) => ({
+                productId: i.productId,
+                variantId: i.variantId || null,
+                title: i.title,
+                price: i.price,
+                quantity: i.quantity,
+                sku: i.sku,
+              })),
+              sumData.data.grandTotal
+            );
+          }
         } else {
           setErrorMsg(sumData?.error?.message || "Some items in your cart are no longer available.");
         }

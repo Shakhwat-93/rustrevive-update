@@ -22,6 +22,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useCart } from "@/context/cart-context";
+import { AnalyticsTracker } from "@/lib/analytics/tracker";
 import { getMediaUrl } from "@/lib/media/media-url";
 import { SizeGuideModal } from "@/components/products/SizeGuideModal";
 import type { SizeChartData } from "@/components/admin/products/SizeChartEditor";
@@ -247,6 +248,19 @@ export function ProductDetailView({
   const availableStock = currentInv
     ? Math.max(0, currentInv.quantity - (currentInv.reserved_quantity || 0))
     : 15;
+
+  // Centralized Marketing Event: ViewContent
+  useEffect(() => {
+    AnalyticsTracker.viewContent({
+      productId: product.id,
+      variantId: activeVariant?.id || null,
+      title: product.title,
+      price: currentPrice,
+      quantity: 1,
+      sku: currentSku,
+      category: product.product_type || "Apparel",
+    });
+  }, [product.id, product.title, activeVariant?.id, currentPrice, currentSku, product.product_type]);
   const isOutOfStock = availableStock <= 0;
   const isLowStock = availableStock > 0 && availableStock <= 3;
 
