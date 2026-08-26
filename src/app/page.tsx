@@ -199,10 +199,10 @@ export default async function HomePage() {
             products={merchandisedProducts}
           />
         )}
+        {isEnabled("everyday_essentials") && <EverydayEssentials products={liveProducts} />}
         {isEnabled("collections") && <EditorialCollectionGrid />}
         {isEnabled("brand_story") && <BrandStory />}
         {isEnabled("category_explorer") && <CategoryExplorer />}
-        {isEnabled("everyday_essentials") && <EverydayEssentials products={liveProducts} />}
       </main>
 
       {/* Editorial Footer */}
