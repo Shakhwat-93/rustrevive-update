@@ -16,7 +16,6 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { usePushNotification } from "@/lib/push/use-push-notification";
 import { useAdminRealtime } from "@/context/admin-realtime-context";
 
@@ -224,7 +223,7 @@ export function AdminNotificationBell() {
             <div className="flex items-center space-x-2 text-xs">
               <button
                 type="button"
-                onClick={() => setSoundEnabled(!soundEnabled)}
+                onClick={toggleSound}
                 className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors cursor-pointer"
                 title={soundEnabled ? "Mute notification sound" : "Enable notification sound"}
               >

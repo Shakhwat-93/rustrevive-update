@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, X, ArrowRight, Volume2, VolumeX, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, X, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { OrderStatus, PaymentStatus } from "@/types/database.types";
 
@@ -171,13 +171,12 @@ export function AdminRealtimeProvider({ children }: { children: React.ReactNode 
         .gte("created_at", since)
         .order("created_at", { ascending: false });
 
-      if (recentOrders && recentOrders.length > 0) {
-        for (const rawOrder of recentOrders) {
+      if (recentOrders && (recentOrders as unknown[]).length > 0) {
+        for (const rawOrder of recentOrders as unknown as RealtimeOrderPayload[]) {
           const dedupeKey = `reconcile_order_${rawOrder.id}`;
           if (!processedEvents.current.has(dedupeKey)) {
             processedEvents.current.set(dedupeKey, Date.now());
-            const formattedOrder = rawOrder as unknown as RealtimeOrderPayload;
-            newOrderListeners.current.forEach((cb) => cb(formattedOrder));
+            newOrderListeners.current.forEach((cb) => cb(rawOrder));
           }
         }
       }
