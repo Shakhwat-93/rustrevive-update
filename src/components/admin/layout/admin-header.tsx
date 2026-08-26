@@ -3,8 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, ExternalLink, Bell, Sparkles } from "lucide-react";
+import { Menu, ExternalLink, Sparkles } from "lucide-react";
 import { GlobalAdminSearch } from "@/components/admin/search/global-admin-search";
+import { AdminNotificationBell } from "@/components/admin/notifications/admin-notification-bell";
 
 interface AdminHeaderProps {
   onOpenMobileMenu: () => void;
@@ -66,15 +67,8 @@ export function AdminHeader({ onOpenMobileMenu }: AdminHeaderProps) {
           <ExternalLink className="w-3 h-3 text-slate-400" />
         </Link>
 
-        {/* Notifications Icon */}
-        <button
-          type="button"
-          className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer relative shrink-0"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 bg-[#9e472a] rounded-full" />
-        </button>
+        {/* Realtime Notification Bell */}
+        <AdminNotificationBell />
 
         {/* Staff Mini Avatar */}
         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold select-none cursor-pointer shrink-0">

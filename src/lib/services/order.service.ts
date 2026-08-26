@@ -4,6 +4,7 @@ import { CheckoutService, type CartItemInput } from "@/lib/services/checkout.ser
 import { CustomerService } from "@/lib/services/customer.service";
 import { InventoryService } from "@/lib/services/inventory.service";
 import { DiscountService } from "@/lib/services/discount.service";
+import { NotificationService } from "@/lib/services/notification.service";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
@@ -197,6 +198,23 @@ export class OrderService {
     logger.info("Order created successfully", "OrderService", {
       orderNumber: order.order_number,
       grandTotal: order.grand_total,
+    });
+
+    // 9. Dispatch Admin In-App & Web Push Notification (Non-blocking)
+    const itemCount = pricingSummary.items.reduce((sum, item) => sum + item.quantity, 0);
+    NotificationService.createNotification({
+      type: "NEW_ORDER",
+      title: "New Order Received",
+      message: `Order #${order.order_number} • ৳${pricingSummary.grandTotal.toLocaleString()} • ${itemCount} ${itemCount === 1 ? "item" : "items"}`,
+      resourceType: "orders",
+      resourceId: order.id,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      customerName: input.customer.name,
+      grandTotal: pricingSummary.grandTotal,
+      itemCount,
+    }).catch((notifErr) => {
+      logger.warn("Failed to dispatch order notification", "OrderService", { error: notifErr });
     });
 
     return {

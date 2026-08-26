@@ -708,6 +708,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      admin_push_subscriptions: {
+        Row: {
+          id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          admin_id: string | null;
+          user_agent: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          admin_id?: string | null;
+          user_agent?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+          admin_id?: string | null;
+          user_agent?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       categories: {
         Row: {
           id: string;

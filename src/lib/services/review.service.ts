@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicServerClient } from "@/lib/supabase/server";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
+import { NotificationService } from "@/lib/services/notification.service";
 import { logger } from "@/lib/logging/logger";
 import type { ReviewStatus } from "@/types/database.types";
 
@@ -149,6 +150,18 @@ export class ReviewService {
       productId: input.productId,
       rating: input.rating,
       isVerifiedPurchase,
+    });
+
+    // Trigger Admin Notification for New Review
+    NotificationService.createNotification({
+      type: "NEW_REVIEW",
+      title: "New Review Awaiting Moderation",
+      message: `${input.rating}★ Review by ${input.customerName}: "${input.title || input.content.slice(0, 50)}..."`,
+      resourceType: "reviews",
+      resourceId: review.id,
+      customerName: input.customerName,
+    }).catch((err) => {
+      logger.warn("Failed to dispatch review notification", "ReviewService", { error: err });
     });
 
     return review;
