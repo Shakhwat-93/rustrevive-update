@@ -25,6 +25,10 @@ import {
   SizeChartEditor,
   type SizeChartData,
 } from "@/components/admin/products/SizeChartEditor";
+import {
+  ColorImageUploader,
+  type ColorGroup,
+} from "@/components/admin/products/ColorImageUploader";
 
 export interface ProductFormData {
   id?: string;
@@ -57,6 +61,7 @@ export interface ProductFormData {
   variants: GeneratedVariant[];
   size_chart?: SizeChartData;
   metafields?: Record<string, string>;
+  color_media?: Record<string, { id?: string; url: string; altText?: string; isPrimary?: boolean }[]> | null;
 }
 
 interface CategoryOption {
@@ -126,6 +131,22 @@ export function ProductForm({ initialData, mode, productId }: ProductFormProps) 
     initialData?.size_chart
   );
   const [template, setTemplate] = useState("Default product");
+
+  // Color-specific image galleries
+  const [colorGroups, setColorGroups] = useState<ColorGroup[]>(() => {
+    const cm = initialData?.color_media;
+    if (!cm || Object.keys(cm).length === 0) return [];
+    return Object.entries(cm).map(([name, imgs], idx) => ({
+      id: `col-init-${idx}`,
+      name,
+      images: imgs.map((img) => ({
+        id: img.id,
+        url: img.url,
+        altText: img.altText,
+        isPrimary: img.isPrimary ?? false,
+      })),
+    }));
+  });
 
   // UI state
   const [isDirty, setIsDirty] = useState(false);
@@ -289,6 +310,11 @@ export function ProductForm({ initialData, mode, productId }: ProductFormProps) 
         media_ids: mediaIds,
         initial_inventory: Number(initialInventory) || 0,
         size_chart: sizeChart,
+        color_media: colorGroups.length > 0
+          ? Object.fromEntries(
+              colorGroups.map((cg) => [cg.name, cg.images])
+            )
+          : null,
         variants: hasVariants
           ? variants.map((v) => ({
               title: v.title,
@@ -525,7 +551,19 @@ export function ProductForm({ initialData, mode, productId }: ProductFormProps) 
               />
             </section>
 
-            {/* 3. Category Selector */}
+            {/* 3. Color-Specific Image Galleries */}
+            <section className="p-6 bg-white border border-slate-200 rounded-2xl shadow-2xs">
+              <ColorImageUploader
+                colors={colorGroups}
+                onChange={(updated) => {
+                  setColorGroups(updated);
+                  markDirty();
+                }}
+                productTitle={title}
+              />
+            </section>
+
+            {/* 4. Category Selector */}
             <section className="p-6 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">

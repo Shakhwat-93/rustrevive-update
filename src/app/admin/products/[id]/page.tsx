@@ -139,6 +139,7 @@ export default function EditProductPage() {
           options: optionsList.length > 0 ? optionsList : [{ id: "opt-1", name: "Size", values: ["S", "M", "L", "XL"] }],
           variants: mappedVariants,
           size_chart: p.size_chart || undefined,
+          color_media: p.color_media || null,
         });
       } catch (err: unknown) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to load product");

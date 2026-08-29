@@ -94,6 +94,7 @@ interface ProductDetailViewProps {
     size_chart?: SizeChartData | null;
     product_variants?: ProductVariant[];
     product_media?: ProductMedia[];
+    color_media?: Record<string, { id?: string; url: string; altText?: string; isPrimary?: boolean }[]> | null;
     inventory?: {
       quantity: number;
       reserved_quantity: number;
@@ -118,7 +119,9 @@ export function ProductDetailView({
   // Media
   const mediaList = product.product_media || [];
   const primaryMedia = mediaList.find((m) => m.is_primary) || mediaList[0];
-  const images = useMemo(() => {
+
+  // All product media URLs (fallback)
+  const allProductImages = useMemo(() => {
     const urls = mediaList
       .map((m) => getMediaUrl(m.media?.public_url))
       .filter(Boolean) as string[];
@@ -161,17 +164,45 @@ export function ProductDetailView({
       }
     });
 
+    // Also add colors from color_media that might not have variants
+    if (product.color_media) {
+      Object.keys(product.color_media).forEach((colorName) => {
+        colors.add(colorName);
+        hasColorOpt = true;
+      });
+    }
+
     return {
       colors: Array.from(colors),
       sizes: Array.from(sizes),
       hasColorOpt,
       hasSizeOpt,
     };
-  }, [rawVariants]);
+  }, [rawVariants, product.color_media]);
 
   const [selectedColor, setSelectedColor] = useState<string | null>(() => {
     return optionDimensions.colors[0] || null;
   });
+
+  // Color-aware gallery: switch image list when color changes
+  const images = useMemo(() => {
+    if (selectedColor && product.color_media && product.color_media[selectedColor]) {
+      const colorImgs = product.color_media[selectedColor]
+        .map((img) => getMediaUrl(img.url))
+        .filter(Boolean) as string[];
+      if (colorImgs.length > 0) return colorImgs;
+    }
+    return allProductImages;
+  }, [selectedColor, product.color_media, allProductImages]);
+
+  // Reset selected image to 0 whenever color changes (safe rapid-switch)
+  const prevColorRef = React.useRef(selectedColor);
+  useEffect(() => {
+    if (prevColorRef.current !== selectedColor) {
+      setSelectedImageIndex(0);
+      prevColorRef.current = selectedColor;
+    }
+  }, [selectedColor]);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(() => {
     return optionDimensions.sizes[0] || null;

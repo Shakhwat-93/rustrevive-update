@@ -47,32 +47,80 @@ export interface CreateProductInput {
   initial_inventory?: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   size_chart?: any;
+  color_media?: ColorMediaMap | null;
 }
 
+export interface ColorMediaItem {
+  id?: string;
+  url: string;
+  altText?: string;
+  isPrimary?: boolean;
+}
+
+export type ColorMediaMap = Record<string, ColorMediaItem[]>;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function encodeSizeChart(description?: string | null, sizeChart?: any): string | null {
+export function encodeProductMetadata(
+  description?: string | null,
+  sizeChart?: any,
+  colorMedia?: ColorMediaMap | null
+): string | null {
   let cleanDesc = description || "";
-  cleanDesc = cleanDesc.replace(/<!-- SIZE_CHART_JSON:[\s\S]*?-->/g, "").trim();
+  cleanDesc = cleanDesc
+    .replace(/<!-- SIZE_CHART_JSON:[\s\S]*?-->/g, "")
+    .replace(/<!-- COLOR_MEDIA_JSON:[\s\S]*?-->/g, "")
+    .trim();
+
   if (sizeChart && sizeChart.mode && sizeChart.mode !== "none") {
     cleanDesc = `${cleanDesc}\n<!-- SIZE_CHART_JSON: ${JSON.stringify(sizeChart)} -->`;
   }
-  return cleanDesc || null;
+
+  if (colorMedia && Object.keys(colorMedia).length > 0) {
+    cleanDesc = `${cleanDesc}\n<!-- COLOR_MEDIA_JSON: ${JSON.stringify(colorMedia)} -->`;
+  }
+
+  return cleanDesc.trim() || null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractSizeChart(description?: string | null): { cleanDescription: string | null; sizeChart: any | null } {
-  if (!description) return { cleanDescription: null, sizeChart: null };
-  const match = description.match(/<!-- SIZE_CHART_JSON:\s*([\s\S]*?)\s*-->/);
-  if (match && match[1]) {
+export function extractProductMetadata(description?: string | null): {
+  cleanDescription: string | null;
+  sizeChart: any | null;
+  colorMedia: ColorMediaMap | null;
+} {
+  if (!description) {
+    return { cleanDescription: null, sizeChart: null, colorMedia: null };
+  }
+
+  let cleanDescription = description;
+  let sizeChart = null;
+  let colorMedia: ColorMediaMap | null = null;
+
+  const sizeMatch = description.match(/<!-- SIZE_CHART_JSON:\s*([\s\S]*?)\s*-->/);
+  if (sizeMatch && sizeMatch[1]) {
     try {
-      const sizeChart = JSON.parse(match[1]);
-      const cleanDescription = description.replace(/<!-- SIZE_CHART_JSON:[\s\S]*?-->/g, "").trim();
-      return { cleanDescription: cleanDescription || null, sizeChart };
+      sizeChart = JSON.parse(sizeMatch[1]);
+      cleanDescription = cleanDescription.replace(/<!-- SIZE_CHART_JSON:[\s\S]*?-->/g, "");
     } catch {
       // ignore parse error
     }
   }
-  return { cleanDescription: description, sizeChart: null };
+
+  const colorMatch = description.match(/<!-- COLOR_MEDIA_JSON:\s*([\s\S]*?)\s*-->/);
+  if (colorMatch && colorMatch[1]) {
+    try {
+      colorMedia = JSON.parse(colorMatch[1]);
+      cleanDescription = cleanDescription.replace(/<!-- COLOR_MEDIA_JSON:[\s\S]*?-->/g, "");
+    } catch {
+      // ignore parse error
+    }
+  }
+
+  return {
+    cleanDescription: cleanDescription.trim() || null,
+    sizeChart,
+    colorMedia,
+  };
 }
 
 export interface ProductQueryFilters {
@@ -266,11 +314,12 @@ export class ProductService {
       return null;
     }
 
-    const { cleanDescription, sizeChart } = extractSizeChart(data.description);
+    const { cleanDescription, sizeChart, colorMedia } = extractProductMetadata(data.description);
     return {
       ...data,
       description: cleanDescription,
       size_chart: sizeChart,
+      color_media: colorMedia,
     };
   }
 
@@ -295,11 +344,12 @@ export class ProductService {
       throw new NotFoundError(`Product with ID ${id} not found.`);
     }
 
-    const { cleanDescription, sizeChart } = extractSizeChart(data.description);
+    const { cleanDescription, sizeChart, colorMedia } = extractProductMetadata(data.description);
     return {
       ...data,
       description: cleanDescription,
       size_chart: sizeChart,
+      color_media: colorMedia,
     };
   }
 
@@ -352,7 +402,7 @@ export class ProductService {
     }
 
     // 2. Insert main Product row
-    const finalDescription = encodeSizeChart(input.description, input.size_chart);
+    const finalDescription = encodeProductMetadata(input.description, input.size_chart, input.color_media);
 
     const { data: product, error: prodErr } = await supabase
       .from("products")
@@ -454,11 +504,11 @@ export class ProductService {
     const supabase = createAdminClient();
 
     // Strip non-table properties
-    const { media_ids: _media_ids, variants, initial_inventory, size_chart, ...productFields } = input;
+    const { media_ids: _media_ids, variants, initial_inventory, size_chart, color_media, ...productFields } = input;
 
     let finalDescription = productFields.description;
-    if (size_chart !== undefined || productFields.description !== undefined) {
-      finalDescription = encodeSizeChart(productFields.description, size_chart) ?? undefined;
+    if (size_chart !== undefined || color_media !== undefined || productFields.description !== undefined) {
+      finalDescription = encodeProductMetadata(productFields.description, size_chart, color_media) ?? undefined;
     }
 
     const { data: product, error } = await supabase
