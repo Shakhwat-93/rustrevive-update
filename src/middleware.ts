@@ -18,6 +18,8 @@ setInterval(() => {
 
 function getRateLimitConfig(pathname: string): { limit: number; windowMs: number } {
   if (pathname.startsWith("/api/checkout")) return { limit: 15, windowMs: 60_000 };
+  // Visitor heartbeat: generous limit — browsers send max 2-3 per minute
+  if (pathname === "/api/visitor/heartbeat") return { limit: 120, windowMs: 60_000 };
   if (pathname.startsWith("/api/admin")) return { limit: 80, windowMs: 60_000 };
   if (pathname.startsWith("/api/webhooks")) return { limit: 150, windowMs: 60_000 };
   if (pathname.startsWith("/api/discounts/validate")) return { limit: 20, windowMs: 60_000 };

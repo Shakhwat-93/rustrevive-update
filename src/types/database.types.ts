@@ -1755,6 +1755,72 @@ export interface Database {
         };
         Relationships: [];
       };
+      live_visitors: {
+        Row: {
+          id: string;
+          visitor_id: string;
+          session_id: string;
+          tab_id: string | null;
+          current_path: string;
+          page_title: string | null;
+          page_type: string;
+          product_id: string | null;
+          category_id: string | null;
+          device_type: string | null;
+          browser: string | null;
+          os: string | null;
+          referrer: string | null;
+          utm_source: string | null;
+          utm_medium: string | null;
+          utm_campaign: string | null;
+          started_at: string;
+          last_seen_at: string;
+          is_active: boolean;
+        };
+        Insert: {
+          id?: string;
+          visitor_id: string;
+          session_id: string;
+          tab_id?: string | null;
+          current_path?: string;
+          page_title?: string | null;
+          page_type?: string;
+          product_id?: string | null;
+          category_id?: string | null;
+          device_type?: string | null;
+          browser?: string | null;
+          os?: string | null;
+          referrer?: string | null;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          started_at?: string;
+          last_seen_at?: string;
+          is_active?: boolean;
+        };
+        Update: {
+          id?: string;
+          visitor_id?: string;
+          session_id?: string;
+          tab_id?: string | null;
+          current_path?: string;
+          page_title?: string | null;
+          page_type?: string;
+          product_id?: string | null;
+          category_id?: string | null;
+          device_type?: string | null;
+          browser?: string | null;
+          os?: string | null;
+          referrer?: string | null;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          started_at?: string;
+          last_seen_at?: string;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1763,6 +1829,10 @@ export interface Database {
       generate_order_number: {
         Args: Record<PropertyKey, never>;
         Returns: string;
+      };
+      cleanup_stale_visitors: {
+        Args: { active_window_seconds?: number };
+        Returns: number;
       };
     };
     Enums: {
