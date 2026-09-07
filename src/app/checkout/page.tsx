@@ -396,7 +396,6 @@ export default function CheckoutPage() {
                     required
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Enter your full name"
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
                   />
                 </div>
@@ -410,7 +409,6 @@ export default function CheckoutPage() {
                     required
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="01XXXXXXXXX"
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
                   />
                 </div>
@@ -423,7 +421,6 @@ export default function CheckoutPage() {
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="your@email.com"
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors"
                   />
                 </div>
@@ -446,7 +443,6 @@ export default function CheckoutPage() {
                     required
                     value={form.addressLine1}
                     onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
-                    placeholder="House, road, area, city..."
                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors resize-none"
                   />
                 </div>
@@ -459,7 +455,6 @@ export default function CheckoutPage() {
                     rows={2}
                     value={form.customerNotes}
                     onChange={(e) => setForm({ ...form, customerNotes: e.target.value })}
-                    placeholder="Any special notes or timing..."
                     className="w-full px-3.5 py-2 text-xs font-mono bg-[#fcfbf9] border border-[#d5cfc2] focus:border-[#9e472a] focus:bg-white outline-none transition-colors resize-none"
                   />
                 </div>
@@ -701,7 +696,6 @@ export default function CheckoutPage() {
                         type="text"
                         value={couponInput}
                         onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                        placeholder="e.g. REVIVE10"
                         className="flex-1 px-3 py-2 text-xs font-mono uppercase border border-[#ded7c8] bg-white outline-none focus:border-[#141312]"
                       />
                       <button
