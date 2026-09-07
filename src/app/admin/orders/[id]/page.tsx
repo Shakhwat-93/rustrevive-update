@@ -131,9 +131,16 @@ export default function AdminOrderDetailPage(props: PageProps) {
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     const isDanger = newStatus === "CANCELLED";
+    const isDelivered = newStatus === "DELIVERED";
+    const actionDesc = isDelivered
+      ? "mark this order as Delivered and dispatch the Delivered conversion tracking event (Meta CAPI & TikTok)"
+      : isDanger
+      ? "cancel this order, restore stock, and dispatch cancellation lifecycle tracking if already in transit"
+      : "update the order status in real-time, log the event to the timeline, and notify the customer if configured";
+
     const ok = await confirm({
       title: `Transition Order to ${newStatus.replace(/_/g, " ")}?`,
-      message: `This will update the order status in real-time, log the event to the timeline, and notify the customer if configured.`,
+      message: `This will ${actionDesc}.`,
       confirmText: `Mark ${newStatus.replace(/_/g, " ")}`,
       variant: isDanger ? "danger" : "primary",
     });
@@ -156,7 +163,12 @@ export default function AdminOrderDetailPage(props: PageProps) {
         const errData = await res.json();
         showToast(errData?.error?.message || "Failed to update status.", "error");
       } else {
-        showToast(`Order status updated to ${newStatus.replace(/_/g, " ")}`, "success");
+        const successMsg = isDelivered
+          ? "✓ Order marked as Delivered & lifecycle event dispatched"
+          : isDanger && order?.status === "SHIPPED"
+          ? "✓ Order cancelled after delivery handover & tracking event dispatched"
+          : `✓ Order status updated to ${newStatus.replace(/_/g, " ")}`;
+        showToast(successMsg, "success");
         await fetchOrder();
       }
     } catch {

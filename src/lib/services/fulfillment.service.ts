@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CourierFactory } from "@/lib/courier/courier-factory";
 import { NotificationService } from "@/lib/services/notification.service";
+import { MarketingTrackingService } from "@/lib/services/marketing-tracking.service";
 import { ValidationError, NotFoundError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
 import type { DeliveryStatus, OrderStatus } from "@/types/database.types";
@@ -241,7 +242,7 @@ export class FulfillmentService {
         created_by: actorName,
       });
 
-      // Send delivery notification if delivered
+      // Send delivery notification & tracking event if delivered
       if (newStatus === "DELIVERED") {
         await NotificationService.sendOrderNotification({
           type: "ORDER_DELIVERED",
@@ -255,6 +256,39 @@ export class FulfillmentService {
           grandTotal: parentOrder.grand_total,
           trackingNumber,
         });
+
+        // Dispatch Delivered conversion event (Meta CAPI & TikTok API) if transitioning to delivered
+        if (parentOrder.status !== "DELIVERED") {
+          const { data: orderItems } = await supabase
+            .from("order_items")
+            .select("product_id, variant_id, product_title_snapshot, sku_snapshot, unit_price, quantity")
+            .eq("order_id", parentOrder.id);
+
+          MarketingTrackingService.dispatchServerConversion({
+            eventId: `evt_delivered_${parentOrder.id}`,
+            eventName: "Delivered",
+            orderId: parentOrder.id,
+            orderNumber: parentOrder.order_number,
+            currency: "BDT",
+            value: parentOrder.grand_total,
+            customer: {
+              email: parentOrder.customer_email || null,
+              phone: parentOrder.customer_phone,
+              name: parentOrder.customer_name,
+            },
+            items: (orderItems || []).map((item) => ({
+              productId: item.product_id || item.variant_id || "item",
+              variantId: item.variant_id || null,
+              title: item.product_title_snapshot,
+              sku: item.sku_snapshot || undefined,
+              price: item.unit_price,
+              quantity: item.quantity,
+            })),
+            sourceUrl: "https://rustrevive.store/admin/orders",
+          }).catch((err) => {
+            logger.warn("Failed to dispatch Delivered conversion event from courier webhook", "FulfillmentService", { error: err });
+          });
+        }
       }
     }
 

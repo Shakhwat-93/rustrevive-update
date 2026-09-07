@@ -443,6 +443,79 @@ export class OrderService {
       created_by: actorName,
     });
 
+    // 7. Lifecycle Event Tracking Dispatch (Meta CAPI & TikTok Events API)
+    const shippingAddr = (order.shipping_address_snapshot || {}) as Record<string, string>;
+    const trackingItems = (order.order_items || []).map((item) => ({
+      productId: item.product_id || item.variant_id || item.id,
+      variantId: item.variant_id || null,
+      title: item.product_title_snapshot,
+      sku: item.sku_snapshot || undefined,
+      price: item.unit_price,
+      quantity: item.quantity,
+    }));
+
+    // A. DELIVERED Lifecycle Event
+    if (newStatus === "DELIVERED" && currentStatus !== "DELIVERED") {
+      MarketingTrackingService.dispatchServerConversion({
+        eventId: `evt_delivered_${order.id}`,
+        eventName: "Delivered",
+        orderId: order.id,
+        orderNumber: order.order_number,
+        currency: order.currency || "BDT",
+        value: order.grand_total,
+        customer: {
+          email: order.customer_email || null,
+          phone: order.customer_phone,
+          name: order.customer_name,
+          city: shippingAddr.city || undefined,
+        },
+        items: trackingItems,
+        sourceUrl: "https://rustrevive.store/admin/orders",
+      }).catch((err) => {
+        logger.warn("Failed to dispatch Delivered server conversion event", "OrderService", { error: err });
+      });
+    }
+
+    // B. CANCELLED_AFTER_DELIVERY_HANDOVER Lifecycle Event
+    if (newStatus === "CANCELLED" && currentStatus !== "CANCELLED") {
+      // Determine if order was already handed over to courier / shipped
+      let wasHandedToDelivery = currentStatus === "SHIPPED";
+      if (!wasHandedToDelivery) {
+        const { data: pastShipEvent } = await supabase
+          .from("order_events")
+          .select("id")
+          .eq("order_id", order.id)
+          .or("new_status.eq.SHIPPED,event_type.eq.SHIPMENT_CREATED")
+          .limit(1)
+          .maybeSingle();
+
+        if (pastShipEvent) {
+          wasHandedToDelivery = true;
+        }
+      }
+
+      if (wasHandedToDelivery) {
+        MarketingTrackingService.dispatchServerConversion({
+          eventId: `evt_cancelled_delivery_${order.id}`,
+          eventName: "CancelledAfterDelivery",
+          orderId: order.id,
+          orderNumber: order.order_number,
+          currency: order.currency || "BDT",
+          value: order.grand_total,
+          customer: {
+            email: order.customer_email || null,
+            phone: order.customer_phone,
+            name: order.customer_name,
+            city: shippingAddr.city || undefined,
+          },
+          items: trackingItems,
+          sourceUrl: "https://rustrevive.store/admin/orders",
+        }).catch((err) => {
+          logger.warn("Failed to dispatch CancelledAfterDelivery server conversion event", "OrderService", { error: err });
+        });
+      }
+    }
+
     logger.info("Order status updated successfully", "OrderService", {
       orderId,
       oldStatus: currentStatus,

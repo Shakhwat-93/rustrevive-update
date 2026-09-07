@@ -483,4 +483,158 @@ export class AnalyticsTracker {
       console.log(`[Analytics Debug] Purchase Fired: Order #${order.orderNumber} (EventID: ${eventId})`);
     }
   }
+
+  /**
+   * 10. Delivered (Ecommerce Lifecycle Event - Deduplicated)
+   */
+  public static delivered(order: PurchaseOrderPayload) {
+    if (typeof window === "undefined") return;
+
+    const eventId = order.eventId || `evt_delivered_${order.orderId}`;
+
+    if (hasEventFired(eventId)) {
+      if (window.__rr_tracking_config?.debugTrackingEnabled) {
+        console.warn(`[Analytics Debug] Duplicate Delivered event prevented for EventID: ${eventId}`);
+      }
+      return;
+    }
+
+    const currency = order.currency || "BDT";
+    const dataLayer = getDataLayer();
+
+    // GA4 / GTM DataLayer
+    dataLayer.push({ ecommerce: null });
+    dataLayer.push({
+      event: "delivered",
+      event_id: eventId,
+      ecommerce: {
+        transaction_id: order.orderNumber,
+        value: order.grandTotal,
+        currency,
+        items: order.items.map((i) => ({
+          item_id: i.variantId || i.productId,
+          item_name: i.title,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      },
+    });
+
+    // Meta Pixel (Custom Event with exact eventID)
+    if (window.fbq) {
+      window.fbq(
+        "trackCustom",
+        "Delivered",
+        {
+          content_ids: order.items.map((i) => i.variantId || i.productId),
+          content_type: "product",
+          value: order.grandTotal,
+          currency,
+          num_items: order.items.reduce((s, i) => s + i.quantity, 0),
+          order_id: order.orderNumber,
+        },
+        { eventID: eventId }
+      );
+    }
+
+    // TikTok Pixel (Custom Event with exact event_id)
+    if (window.ttq) {
+      window.ttq.track(
+        "Delivered",
+        {
+          contents: order.items.map((i) => ({
+            content_id: i.variantId || i.productId,
+            content_name: i.title,
+            price: i.price,
+            quantity: i.quantity,
+          })),
+          value: order.grandTotal,
+          currency,
+          order_id: order.orderNumber,
+        },
+        { event_id: eventId }
+      );
+    }
+
+    if (window.__rr_tracking_config?.debugTrackingEnabled) {
+      console.log(`[Analytics Debug] Delivered Fired: Order #${order.orderNumber} (EventID: ${eventId})`);
+    }
+  }
+
+  /**
+   * 11. Cancelled After Delivery Handover (Ecommerce Lifecycle Event - Deduplicated)
+   */
+  public static cancelledAfterDelivery(order: PurchaseOrderPayload) {
+    if (typeof window === "undefined") return;
+
+    const eventId = order.eventId || `evt_cancelled_delivery_${order.orderId}`;
+
+    if (hasEventFired(eventId)) {
+      if (window.__rr_tracking_config?.debugTrackingEnabled) {
+        console.warn(`[Analytics Debug] Duplicate CancelledAfterDelivery event prevented for EventID: ${eventId}`);
+      }
+      return;
+    }
+
+    const currency = order.currency || "BDT";
+    const dataLayer = getDataLayer();
+
+    // GA4 / GTM DataLayer
+    dataLayer.push({ ecommerce: null });
+    dataLayer.push({
+      event: "cancelled_after_delivery",
+      event_id: eventId,
+      ecommerce: {
+        transaction_id: order.orderNumber,
+        value: order.grandTotal,
+        currency,
+        items: order.items.map((i) => ({
+          item_id: i.variantId || i.productId,
+          item_name: i.title,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      },
+    });
+
+    // Meta Pixel (Custom Event with exact eventID)
+    if (window.fbq) {
+      window.fbq(
+        "trackCustom",
+        "CancelledAfterDelivery",
+        {
+          content_ids: order.items.map((i) => i.variantId || i.productId),
+          content_type: "product",
+          value: order.grandTotal,
+          currency,
+          num_items: order.items.reduce((s, i) => s + i.quantity, 0),
+          order_id: order.orderNumber,
+        },
+        { eventID: eventId }
+      );
+    }
+
+    // TikTok Pixel (Custom Event with exact event_id)
+    if (window.ttq) {
+      window.ttq.track(
+        "CancelledAfterDelivery",
+        {
+          contents: order.items.map((i) => ({
+            content_id: i.variantId || i.productId,
+            content_name: i.title,
+            price: i.price,
+            quantity: i.quantity,
+          })),
+          value: order.grandTotal,
+          currency,
+          order_id: order.orderNumber,
+        },
+        { event_id: eventId }
+      );
+    }
+
+    if (window.__rr_tracking_config?.debugTrackingEnabled) {
+      console.log(`[Analytics Debug] CancelledAfterDelivery Fired: Order #${order.orderNumber} (EventID: ${eventId})`);
+    }
+  }
 }

@@ -43,7 +43,14 @@ export interface AdminMarketingSettingsInput {
 
 export interface ServerConversionEvent {
   eventId: string;
-  eventName: "PageView" | "ViewContent" | "AddToCart" | "InitiateCheckout" | "Purchase";
+  eventName:
+    | "PageView"
+    | "ViewContent"
+    | "AddToCart"
+    | "InitiateCheckout"
+    | "Purchase"
+    | "Delivered"
+    | "CancelledAfterDelivery";
   orderId?: string;
   orderNumber?: string;
   currency?: string;
@@ -304,71 +311,88 @@ export class MarketingTrackingService {
     // --- A. Meta Conversions API (CAPI) ---
     if (settings.meta_capi_enabled && settings.meta_pixel_id && settings.meta_capi_access_token) {
       try {
-        const metaEventName =
-          event.eventName === "Purchase"
-            ? "Purchase"
-            : event.eventName === "InitiateCheckout"
-            ? "InitiateCheckout"
-            : event.eventName === "AddToCart"
-            ? "AddToCart"
-            : event.eventName === "ViewContent"
-            ? "ViewContent"
-            : "PageView";
+        // Database Idempotency Check: Prevent duplicate dispatch if already successfully sent
+        const { data: existingMetaLog } = await supabase
+          .from("server_analytics_logs")
+          .select("id, status")
+          .eq("event_id", event.eventId)
+          .eq("provider", "META_CAPI")
+          .eq("status", "SENT")
+          .maybeSingle();
 
-        const metaPayload: Record<string, any> = {
-          data: [
-            {
-              event_name: metaEventName,
-              event_time: currentUnixTime,
-              event_id: event.eventId, // Exact match with browser Meta Pixel
-              action_source: "website",
-              event_source_url: event.sourceUrl || "https://rustrevive.com",
-              user_data: {
-                em: emailHash ? [emailHash] : undefined,
-                ph: phoneHash ? [phoneHash] : undefined,
-                client_ip_address: event.customer?.ipAddress || undefined,
-                client_user_agent: event.customer?.userAgent || undefined,
-              },
-              custom_data: {
-                currency: event.currency || "BDT",
-                value: event.value || 0,
-                order_id: event.orderNumber || event.orderId || undefined,
-                contents: event.items?.map((item) => ({
-                  id: item.variantId || item.productId,
-                  quantity: item.quantity,
-                  item_price: item.price,
-                })),
-                content_type: "product",
-              },
-            },
-          ],
-        };
+        if (existingMetaLog) {
+          logger.info(`Meta CAPI event ${event.eventId} already sent (idempotent skip)`, "MarketingTrackingService");
+        } else {
+          const metaEventName =
+            event.eventName === "Purchase"
+              ? "Purchase"
+              : event.eventName === "Delivered"
+              ? "Delivered"
+              : event.eventName === "CancelledAfterDelivery"
+              ? "CancelledAfterDelivery"
+              : event.eventName === "InitiateCheckout"
+              ? "InitiateCheckout"
+              : event.eventName === "AddToCart"
+              ? "AddToCart"
+              : event.eventName === "ViewContent"
+              ? "ViewContent"
+              : "PageView";
 
-        if (settings.meta_test_event_code) {
-          metaPayload["test_event_code"] = settings.meta_test_event_code;
+          const metaPayload: Record<string, any> = {
+            data: [
+              {
+                event_name: metaEventName,
+                event_time: currentUnixTime,
+                event_id: event.eventId, // Exact match with browser Meta Pixel
+                action_source: "website",
+                event_source_url: event.sourceUrl || "https://rustrevive.store",
+                user_data: {
+                  em: emailHash ? [emailHash] : undefined,
+                  ph: phoneHash ? [phoneHash] : undefined,
+                  client_ip_address: event.customer?.ipAddress || undefined,
+                  client_user_agent: event.customer?.userAgent || undefined,
+                },
+                custom_data: {
+                  currency: event.currency || "BDT",
+                  value: event.value || 0,
+                  order_id: event.orderNumber || event.orderId || undefined,
+                  contents: event.items?.map((item) => ({
+                    id: item.variantId || item.productId,
+                    quantity: item.quantity,
+                    item_price: item.price,
+                  })),
+                  content_type: "product",
+                },
+              },
+            ],
+          };
+
+          if (settings.meta_test_event_code) {
+            metaPayload["test_event_code"] = settings.meta_test_event_code;
+          }
+
+          const metaUrl = `https://graph.facebook.com/v19.0/${settings.meta_pixel_id}/events?access_token=${settings.meta_capi_access_token}`;
+          const metaRes = await fetch(metaUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(metaPayload),
+          });
+
+          const metaJson = await metaRes.json();
+
+          // Log delivery audit
+          await supabase.from("server_analytics_logs").insert({
+            event_id: event.eventId,
+            event_name: metaEventName,
+            order_id: event.orderId || null,
+            provider: "META_CAPI",
+            status: metaRes.ok ? "SENT" : "FAILED",
+            payload: metaPayload as any,
+            response_data: metaJson,
+            error_message: metaRes.ok ? null : JSON.stringify(metaJson?.error || metaJson),
+            sent_at: metaRes.ok ? new Date().toISOString() : null,
+          });
         }
-
-        const metaUrl = `https://graph.facebook.com/v19.0/${settings.meta_pixel_id}/events?access_token=${settings.meta_capi_access_token}`;
-        const metaRes = await fetch(metaUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(metaPayload),
-        });
-
-        const metaJson = await metaRes.json();
-
-        // Log delivery audit
-        await supabase.from("server_analytics_logs").insert({
-          event_id: event.eventId,
-          event_name: metaEventName,
-          order_id: event.orderId || null,
-          provider: "META_CAPI",
-          status: metaRes.ok ? "SENT" : "FAILED",
-          payload: metaPayload as any,
-          response_data: metaJson,
-          error_message: metaRes.ok ? null : JSON.stringify(metaJson?.error || metaJson),
-          sent_at: metaRes.ok ? new Date().toISOString() : null,
-        });
       } catch (err: unknown) {
         logger.error("Meta CAPI dispatch error", err, "MarketingTrackingService");
       }
@@ -377,74 +401,91 @@ export class MarketingTrackingService {
     // --- B. TikTok Events API ---
     if (settings.tiktok_events_api_enabled && settings.tiktok_pixel_id && settings.tiktok_events_api_access_token) {
       try {
-        const tiktokEventName =
-          event.eventName === "Purchase"
-            ? "CompletePayment"
-            : event.eventName === "InitiateCheckout"
-            ? "InitiateCheckout"
-            : event.eventName === "AddToCart"
-            ? "AddToCart"
-            : event.eventName === "ViewContent"
-            ? "ViewContent"
-            : "Pageview";
+        // Database Idempotency Check: Prevent duplicate dispatch if already successfully sent
+        const { data: existingTikTokLog } = await supabase
+          .from("server_analytics_logs")
+          .select("id, status")
+          .eq("event_id", event.eventId)
+          .eq("provider", "TIKTOK_EVENTS_API")
+          .eq("status", "SENT")
+          .maybeSingle();
 
-        const tiktokPayload: Record<string, any> = {
-          event_source: "web",
-          event_source_id: settings.tiktok_pixel_id,
-          data: [
-            {
-              event: tiktokEventName,
-              event_id: event.eventId, // Exact match with TikTok Pixel
-              event_time: currentUnixTime,
-              user: {
-                email: emailHash,
-                phone_number: phoneHash,
-                ip: event.customer?.ipAddress || undefined,
-                user_agent: event.customer?.userAgent || undefined,
+        if (existingTikTokLog) {
+          logger.info(`TikTok Events API event ${event.eventId} already sent (idempotent skip)`, "MarketingTrackingService");
+        } else {
+          const tiktokEventName =
+            event.eventName === "Purchase"
+              ? "CompletePayment"
+              : event.eventName === "Delivered"
+              ? "Delivered"
+              : event.eventName === "CancelledAfterDelivery"
+              ? "CancelledAfterDelivery"
+              : event.eventName === "InitiateCheckout"
+              ? "InitiateCheckout"
+              : event.eventName === "AddToCart"
+              ? "AddToCart"
+              : event.eventName === "ViewContent"
+              ? "ViewContent"
+              : "Pageview";
+
+          const tiktokPayload: Record<string, any> = {
+            event_source: "web",
+            event_source_id: settings.tiktok_pixel_id,
+            data: [
+              {
+                event: tiktokEventName,
+                event_id: event.eventId, // Exact match with TikTok Pixel
+                event_time: currentUnixTime,
+                user: {
+                  email: emailHash,
+                  phone_number: phoneHash,
+                  ip: event.customer?.ipAddress || undefined,
+                  user_agent: event.customer?.userAgent || undefined,
+                },
+                properties: {
+                  currency: event.currency || "BDT",
+                  value: event.value || 0,
+                  order_id: event.orderNumber || event.orderId || undefined,
+                  contents: event.items?.map((item) => ({
+                    content_id: item.variantId || item.productId,
+                    content_type: "product",
+                    content_name: item.title,
+                    quantity: item.quantity,
+                    price: item.price,
+                  })),
+                },
               },
-              properties: {
-                currency: event.currency || "BDT",
-                value: event.value || 0,
-                order_id: event.orderNumber || event.orderId || undefined,
-                contents: event.items?.map((item) => ({
-                  content_id: item.variantId || item.productId,
-                  content_type: "product",
-                  content_name: item.title,
-                  quantity: item.quantity,
-                  price: item.price,
-                })),
-              },
+            ],
+          };
+
+          if (settings.tiktok_test_event_code) {
+            tiktokPayload["test_event_code"] = settings.tiktok_test_event_code;
+          }
+
+          const ttRes = await fetch("https://business-api.tiktok.com/open_api/v1.3/event/track/", {
+            method: "POST",
+            headers: {
+              "Access-Token": settings.tiktok_events_api_access_token,
+              "Content-Type": "application/json",
             },
-          ],
-        };
+            body: JSON.stringify(tiktokPayload),
+          });
 
-        if (settings.tiktok_test_event_code) {
-          tiktokPayload["test_event_code"] = settings.tiktok_test_event_code;
+          const ttJson = await ttRes.json();
+
+          // Log delivery audit
+          await supabase.from("server_analytics_logs").insert({
+            event_id: event.eventId,
+            event_name: tiktokEventName,
+            order_id: event.orderId || null,
+            provider: "TIKTOK_EVENTS_API",
+            status: ttRes.ok && ttJson.code === 0 ? "SENT" : "FAILED",
+            payload: tiktokPayload as any,
+            response_data: ttJson,
+            error_message: ttRes.ok && ttJson.code === 0 ? null : JSON.stringify(ttJson),
+            sent_at: ttRes.ok && ttJson.code === 0 ? new Date().toISOString() : null,
+          });
         }
-
-        const ttRes = await fetch("https://business-api.tiktok.com/open_api/v1.3/event/track/", {
-          method: "POST",
-          headers: {
-            "Access-Token": settings.tiktok_events_api_access_token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(tiktokPayload),
-        });
-
-        const ttJson = await ttRes.json();
-
-        // Log delivery audit
-        await supabase.from("server_analytics_logs").insert({
-          event_id: event.eventId,
-          event_name: tiktokEventName,
-          order_id: event.orderId || null,
-          provider: "TIKTOK_EVENTS_API",
-          status: ttRes.ok && ttJson.code === 0 ? "SENT" : "FAILED",
-          payload: tiktokPayload as any,
-          response_data: ttJson,
-          error_message: ttRes.ok && ttJson.code === 0 ? null : JSON.stringify(ttJson),
-          sent_at: ttRes.ok && ttJson.code === 0 ? new Date().toISOString() : null,
-        });
       } catch (err: unknown) {
         logger.error("TikTok Events API dispatch error", err, "MarketingTrackingService");
       }
