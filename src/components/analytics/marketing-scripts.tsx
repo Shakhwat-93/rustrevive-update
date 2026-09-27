@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import type { PublicTrackingConfig } from "@/lib/services/marketing-tracking.service";
+import type { PublicTrackingConfig } from "@/types/marketing-tracking.types";
 import { AnalyticsTracker } from "@/lib/analytics/tracker";
 
 export function MarketingScripts() {

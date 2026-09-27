@@ -3,77 +3,14 @@ import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logger } from "@/lib/logging/logger";
 
-export interface PublicTrackingConfig {
-  gtmEnabled: boolean;
-  gtmContainerId: string | null;
-  ga4Enabled: boolean;
-  ga4MeasurementId: string | null;
-  metaPixelEnabled: boolean;
-  metaPixelId: string | null;
-  metaCapiEnabled: boolean;
-  metaTestEventCode: string | null;
-  tiktokPixelEnabled: boolean;
-  tiktokPixelId: string | null;
-  tiktokEventsApiEnabled: boolean;
-  tiktokTestEventCode: string | null;
-  ecommerceTrackingEnabled: boolean;
-  debugTrackingEnabled: boolean;
-  consentModeEnabled: boolean;
-}
+import type {
+  PublicTrackingConfig,
+  AdminMarketingSettingsInput,
+  ServerConversionEvent,
+} from "@/types/marketing-tracking.types";
 
-export interface AdminMarketingSettingsInput {
-  gtmEnabled?: boolean;
-  gtmContainerId?: string | null;
-  ga4Enabled?: boolean;
-  ga4MeasurementId?: string | null;
-  metaPixelEnabled?: boolean;
-  metaPixelId?: string | null;
-  metaCapiEnabled?: boolean;
-  metaCapiAccessToken?: string | null;
-  metaTestEventCode?: string | null;
-  tiktokPixelEnabled?: boolean;
-  tiktokPixelId?: string | null;
-  tiktokEventsApiEnabled?: boolean;
-  tiktokEventsApiAccessToken?: string | null;
-  tiktokTestEventCode?: string | null;
-  ecommerceTrackingEnabled?: boolean;
-  debugTrackingEnabled?: boolean;
-  consentModeEnabled?: boolean;
-}
+export type { PublicTrackingConfig, AdminMarketingSettingsInput, ServerConversionEvent };
 
-export interface ServerConversionEvent {
-  eventId: string;
-  eventName:
-    | "PageView"
-    | "ViewContent"
-    | "AddToCart"
-    | "InitiateCheckout"
-    | "Purchase"
-    | "Delivered"
-    | "CancelledAfterDelivery";
-  orderId?: string;
-  orderNumber?: string;
-  currency?: string;
-  value?: number;
-  customer?: {
-    email?: string | null;
-    phone?: string | null;
-    name?: string | null;
-    city?: string | null;
-    ipAddress?: string | null;
-    userAgent?: string | null;
-  };
-  items?: Array<{
-    productId: string;
-    variantId?: string | null;
-    title: string;
-    sku?: string;
-    price: number;
-    quantity: number;
-    category?: string;
-  }>;
-  sourceUrl?: string;
-}
 
 export class MarketingTrackingService {
   private static SINGLETON_ID = "marketing_tracking_singleton";

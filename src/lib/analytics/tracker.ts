@@ -1,6 +1,6 @@
 "use client";
 
-import type { PublicTrackingConfig } from "@/lib/services/marketing-tracking.service";
+import type { PublicTrackingConfig } from "@/types/marketing-tracking.types";
 
 declare global {
   interface Window {
