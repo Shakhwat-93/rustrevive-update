@@ -257,6 +257,26 @@ export function ProductDetailView({
     }
   }, [activeImageIndex]);
 
+  // Explicit color selection: switches color, immediately displays its primary image at index 0, and briefly pauses autoplay
+  const handleSelectColor = useCallback((col: string) => {
+    setSelectedColor(col);
+    setSelectedImageIndex(0);
+    setIsAutoPlayPaused(true);
+    setTimeout(() => {
+      setIsAutoPlayPaused(false);
+    }, 5000);
+    setValidationError(null);
+  }, []);
+
+  // Explicit thumbnail selection: displays clicked image and briefly pauses autoplay
+  const handleSelectThumbnail = useCallback((idx: number) => {
+    setSelectedImageIndex(idx);
+    setIsAutoPlayPaused(true);
+    setTimeout(() => {
+      setIsAutoPlayPaused(false);
+    }, 5000);
+  }, []);
+
   const [selectedSize, setSelectedSize] = useState<string | null>(() => {
     return optionDimensions.sizes[0] || null;
   });
@@ -635,7 +655,7 @@ export function ProductDetailView({
                   ref={(el) => {
                     thumbnailRefs.current[idx] = el;
                   }}
-                  onClick={() => setSelectedImageIndex(idx)}
+                  onClick={() => handleSelectThumbnail(idx)}
                   className={`relative aspect-[3/4] w-14 sm:w-16 lg:w-18 shrink-0 overflow-hidden bg-[#f4eee3] border transition-all cursor-pointer rounded-xs ${
                     activeImageIndex === idx
                       ? "border-[#141312] ring-2 ring-[#141312]/20"
@@ -677,7 +697,7 @@ export function ProductDetailView({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+                    handleSelectThumbnail((activeImageIndex - 1 + images.length) % images.length);
                   }}
                   className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-[#ded7c8] flex items-center justify-center text-[#141312] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-xs hover:bg-white hover:scale-105 cursor-pointer z-20"
                   aria-label="Previous image"
@@ -688,7 +708,7 @@ export function ProductDetailView({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedImageIndex((prev) => (prev + 1) % images.length);
+                    handleSelectThumbnail((activeImageIndex + 1) % images.length);
                   }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-[#ded7c8] flex items-center justify-center text-[#141312] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-xs hover:bg-white hover:scale-105 cursor-pointer z-20"
                   aria-label="Next image"
@@ -705,7 +725,7 @@ export function ProductDetailView({
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setSelectedImageIndex(idx)}
+                    onClick={() => handleSelectThumbnail(idx)}
                     className={`h-1.5 rounded-full transition-all cursor-pointer ${
                       activeImageIndex === idx ? "w-4 bg-white" : "w-1.5 bg-white/60"
                     }`}
@@ -867,21 +887,30 @@ export function ProductDetailView({
                 <div className="flex flex-wrap gap-2">
                   {optionDimensions.colors.map((col) => {
                     const isSelected = selectedColor === col;
+                    const colMedia = product.color_media?.[col]?.[0]?.url;
                     return (
                       <button
                         key={col}
                         type="button"
-                        onClick={() => {
-                          setSelectedColor(col);
-                          setValidationError(null);
-                        }}
-                        className={`px-4 py-2 text-xs font-mono-meta uppercase tracking-wider border rounded-xs transition-all cursor-pointer ${
+                        onClick={() => handleSelectColor(col)}
+                        className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs font-mono-meta uppercase tracking-wider border rounded-xs transition-all cursor-pointer ${
                           isSelected
-                            ? "border-[#141312] bg-[#141312] text-[#fbf9f5] font-bold shadow-xs"
+                            ? "border-[#141312] bg-[#141312] text-[#fbf9f5] font-bold shadow-xs ring-1 ring-[#141312]"
                             : "border-[#ded7c8] bg-white text-[#5c574e] hover:border-[#141312] hover:text-[#141312]"
                         }`}
                       >
-                        {col}
+                        {colMedia && (
+                          <span className="relative w-4 h-4 rounded-full overflow-hidden border border-[#ded7c8]/60 shrink-0">
+                            <Image
+                              src={getMediaUrl(colMedia)}
+                              alt={col}
+                              fill
+                              className="object-cover"
+                              sizes="16px"
+                            />
+                          </span>
+                        )}
+                        <span>{col}</span>
                       </button>
                     );
                   })}
