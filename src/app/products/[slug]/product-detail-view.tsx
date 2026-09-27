@@ -13,6 +13,8 @@ import {
   Minus,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Ruler,
   MessageCircle,
   ShieldCheck,
@@ -228,6 +230,32 @@ export function ProductDetailView({
       prevColorRef.current = selectedColor;
     }
   }, [selectedColor]);
+
+  // Autoplay / auto-slide state & thumbnail ref tracking
+  const [isAutoPlayPaused, setIsAutoPlayPaused] = useState(false);
+  const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Smooth auto-slide gallery every 3.5 seconds
+  useEffect(() => {
+    if (images.length <= 1 || isAutoPlayPaused || isZoomed) return;
+
+    const timer = setInterval(() => {
+      setSelectedImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+    }, 3500);
+
+    return () => clearInterval(timer);
+  }, [images.length, isAutoPlayPaused, isZoomed]);
+
+  // Keep active thumbnail in view when auto-sliding or switching
+  useEffect(() => {
+    if (thumbnailRefs.current[activeImageIndex]) {
+      thumbnailRefs.current[activeImageIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [activeImageIndex]);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(() => {
     return optionDimensions.sizes[0] || null;
@@ -596,10 +624,17 @@ export function ProductDetailView({
         <div className="lg:col-span-6 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 select-none lg:sticky lg:top-24 items-start justify-center lg:justify-start">
           {/* Thumbnails */}
           {images.length > 1 && (
-            <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:w-16 lg:w-18 sm:max-h-[min(480px,68vh)] shrink-0 scrollbar-none">
+            <div
+              className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:w-16 lg:w-18 sm:max-h-[min(480px,68vh)] shrink-0 scrollbar-none"
+              onMouseEnter={() => setIsAutoPlayPaused(true)}
+              onMouseLeave={() => setIsAutoPlayPaused(false)}
+            >
               {images.map((imgUrl, idx) => (
                 <button
                   key={idx}
+                  ref={(el) => {
+                    thumbnailRefs.current[idx] = el;
+                  }}
                   onClick={() => setSelectedImageIndex(idx)}
                   className={`relative aspect-[3/4] w-14 sm:w-16 lg:w-18 shrink-0 overflow-hidden bg-[#f4eee3] border transition-all cursor-pointer rounded-xs ${
                     activeImageIndex === idx
@@ -620,20 +655,74 @@ export function ProductDetailView({
             </div>
           )}
 
-          {/* Primary Main Image Frame with Desktop Zoom */}
+          {/* Primary Main Image Frame with Desktop Zoom & Auto-Play */}
           <div
             className="relative w-full max-w-[360px] sm:max-w-[400px] lg:max-w-[430px] aspect-[3/4] max-h-[min(480px,68vh)] bg-[#f4eee3] border border-[#ded7c8] overflow-hidden flex items-center justify-center cursor-crosshair group rounded-xs p-2 sm:p-3 mx-auto lg:mx-0"
-            onMouseEnter={() => setIsZoomed(true)}
-            onMouseLeave={() => setIsZoomed(false)}
+            onMouseEnter={() => {
+              setIsZoomed(true);
+              setIsAutoPlayPaused(true);
+            }}
+            onMouseLeave={() => {
+              setIsZoomed(false);
+              setIsAutoPlayPaused(false);
+            }}
+            onTouchStart={() => setIsAutoPlayPaused(true)}
+            onTouchEnd={() => setIsAutoPlayPaused(false)}
             onMouseMove={handleMouseMoveZoom}
           >
+            {/* Desktop Left/Right Navigation Arrows on Hover */}
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+                  }}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-[#ded7c8] flex items-center justify-center text-[#141312] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-xs hover:bg-white hover:scale-105 cursor-pointer z-20"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImageIndex((prev) => (prev + 1) % images.length);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-[#ded7c8] flex items-center justify-center text-[#141312] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-xs hover:bg-white hover:scale-105 cursor-pointer z-20"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
+
+            {/* Mobile Pagination Dots */}
+            {images.length > 1 && (
+              <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:hidden z-20 bg-black/30 backdrop-blur-xs px-2.5 py-1 rounded-full">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                      activeImageIndex === idx ? "w-4 bg-white" : "w-1.5 bg-white/60"
+                    }`}
+                    aria-label={`Go to image ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+
             {images[activeImageIndex] ? (
               <Image
+                key={images[activeImageIndex]}
                 src={images[activeImageIndex]}
                 alt={product.title}
                 fill
-                priority
-                className={`object-contain object-center transition-transform duration-300 ${
+                priority={activeImageIndex === 0}
+                className={`object-contain object-center transition-all duration-500 ease-out ${
                   isZoomed ? "scale-125" : "scale-100"
                 }`}
                 style={
