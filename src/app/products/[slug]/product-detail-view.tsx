@@ -591,17 +591,17 @@ export function ProductDetailView({
   return (
     <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 pb-24">
       {/* 1. Main PDP Two-Column Balanced Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start pt-2">
-        {/* Left Column: Interactive Media Gallery (7 Cols Desktop) */}
-        <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-3.5 sm:gap-4 select-none">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-14 items-start pt-2">
+        {/* Left Column: Interactive Media Gallery (6 Cols Desktop with Sticky Viewport) */}
+        <div className="lg:col-span-6 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 select-none lg:sticky lg:top-24 items-start justify-center lg:justify-start">
           {/* Thumbnails */}
           {images.length > 1 && (
-            <div className="flex sm:flex-col gap-2.5 overflow-x-auto sm:overflow-y-auto sm:w-20 shrink-0 scrollbar-none">
+            <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:w-16 lg:w-18 sm:max-h-[min(480px,68vh)] shrink-0 scrollbar-none">
               {images.map((imgUrl, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`relative aspect-[3/4] w-16 sm:w-20 overflow-hidden bg-[#f4eee3] border transition-all cursor-pointer rounded-xs ${
+                  className={`relative aspect-[3/4] w-14 sm:w-16 lg:w-18 shrink-0 overflow-hidden bg-[#f4eee3] border transition-all cursor-pointer rounded-xs ${
                     activeImageIndex === idx
                       ? "border-[#141312] ring-2 ring-[#141312]/20"
                       : "border-[#ded7c8] opacity-75 hover:opacity-100"
@@ -622,7 +622,7 @@ export function ProductDetailView({
 
           {/* Primary Main Image Frame with Desktop Zoom */}
           <div
-            className="relative w-full aspect-[3/4] max-h-[580px] sm:max-h-[640px] bg-[#f4eee3] border border-[#ded7c8] overflow-hidden flex items-center justify-center cursor-crosshair group rounded-xs p-2 sm:p-4"
+            className="relative w-full max-w-[360px] sm:max-w-[400px] lg:max-w-[430px] aspect-[3/4] max-h-[min(480px,68vh)] bg-[#f4eee3] border border-[#ded7c8] overflow-hidden flex items-center justify-center cursor-crosshair group rounded-xs p-2 sm:p-3 mx-auto lg:mx-0"
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMoveZoom}
@@ -689,8 +689,8 @@ export function ProductDetailView({
           </div>
         </div>
 
-        {/* Right Column: Garment Information & Purchase Controls (5 Cols Desktop) */}
-        <div className="lg:col-span-5 space-y-6">
+        {/* Right Column: Garment Information & Purchase Controls (6 Cols Desktop) */}
+        <div className="lg:col-span-6 space-y-6">
           {/* Header: Title, SKU, Rating */}
           <div className="space-y-2 border-b border-[#ded7c8] pb-5">
             <div className="flex items-center justify-between">
