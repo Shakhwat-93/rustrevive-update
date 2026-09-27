@@ -121,9 +121,14 @@ export function ProductDetailView({
   const mediaList = product.product_media || [];
   const primaryMedia = mediaList.find((m) => m.is_primary) || mediaList[0];
 
-  // All product media URLs (fallback)
+  // All product media URLs (fallback & full gallery)
   const allProductImages = useMemo(() => {
-    const urls = mediaList
+    const sortedMedia = [...mediaList].sort((a, b) => {
+      if (a.is_primary && !b.is_primary) return -1;
+      if (!a.is_primary && b.is_primary) return 1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    });
+    const urls = sortedMedia
       .map((m) => getMediaUrl(m.media?.public_url))
       .filter(Boolean) as string[];
     return urls.length > 0 ? urls : ["/placeholder-garment.webp"];
@@ -185,16 +190,35 @@ export function ProductDetailView({
     return optionDimensions.colors[0] || null;
   });
 
-  // Color-aware gallery: switch image list when color changes
+  // Color-aware gallery: prioritize selected color images, followed by all general product images
   const images = useMemo(() => {
+    const baseImages = allProductImages.length > 0 ? allProductImages : ["/placeholder-garment.webp"];
+
     if (selectedColor && product.color_media && product.color_media[selectedColor]) {
       const colorImgs = product.color_media[selectedColor]
         .map((img) => getMediaUrl(img.url))
         .filter(Boolean) as string[];
-      if (colorImgs.length > 0) return colorImgs;
+
+      if (colorImgs.length > 0) {
+        // Exclude placeholder from base if real color images exist
+        const realBaseImages = baseImages.filter(
+          (url) => !url.includes("placeholder-garment.webp")
+        );
+
+        // Deduplicate: append any product general images that are not identical to colorImgs
+        const colorSet = new Set(colorImgs.map((u) => u.trim()));
+        const remainingBaseImages = realBaseImages.filter((url) => !colorSet.has(url.trim()));
+
+        // Return color images first, followed by the rest of the product gallery
+        return [...colorImgs, ...remainingBaseImages];
+      }
     }
-    return allProductImages;
+
+    return baseImages;
   }, [selectedColor, product.color_media, allProductImages]);
+
+  // Ensure active image index is always within bounds
+  const activeImageIndex = selectedImageIndex < images.length ? selectedImageIndex : 0;
 
   // Reset selected image to 0 whenever color changes (safe rapid-switch)
   const prevColorRef = React.useRef(selectedColor);
@@ -452,7 +476,7 @@ export function ProductDetailView({
             : selectedSize || selectedColor || undefined),
         sku: currentSku,
         price: currentPrice,
-        imageUrl: images[selectedImageIndex] || getMediaUrl(primaryMedia?.media?.public_url),
+        imageUrl: images[activeImageIndex] || getMediaUrl(primaryMedia?.media?.public_url),
       },
       quantity
     );
@@ -478,7 +502,7 @@ export function ProductDetailView({
             : selectedSize || selectedColor || undefined),
         sku: currentSku,
         price: currentPrice,
-        imageUrl: images[selectedImageIndex] || getMediaUrl(primaryMedia?.media?.public_url),
+        imageUrl: images[activeImageIndex] || getMediaUrl(primaryMedia?.media?.public_url),
       },
       quantity
     );
@@ -578,7 +602,7 @@ export function ProductDetailView({
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
                   className={`relative aspect-[3/4] w-16 sm:w-20 overflow-hidden bg-[#f4eee3] border transition-all cursor-pointer rounded-xs ${
-                    selectedImageIndex === idx
+                    activeImageIndex === idx
                       ? "border-[#141312] ring-2 ring-[#141312]/20"
                       : "border-[#ded7c8] opacity-75 hover:opacity-100"
                   }`}
@@ -603,9 +627,9 @@ export function ProductDetailView({
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMoveZoom}
           >
-            {images[selectedImageIndex] ? (
+            {images[activeImageIndex] ? (
               <Image
-                src={images[selectedImageIndex]}
+                src={images[activeImageIndex]}
                 alt={product.title}
                 fill
                 priority
@@ -1267,7 +1291,7 @@ export function ProductDetailView({
             <div className="flex items-center space-x-2.5 min-w-0">
               <div className="relative w-11 h-11 bg-[#f4eee3] border border-[#ded7c8] shrink-0 overflow-hidden rounded-xs">
                 <Image
-                  src={images[selectedImageIndex] || "/placeholder-garment.webp"}
+                  src={images[activeImageIndex] || "/placeholder-garment.webp"}
                   alt={product.title}
                   fill
                   className="object-cover"
