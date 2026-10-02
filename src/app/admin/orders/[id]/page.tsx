@@ -10,7 +10,6 @@ import {
   Mail,
   Send,
   Loader2,
-  Printer,
   Truck,
   Package,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import { StatusBadge } from "@/components/admin/ui/status-badge";
 import { useAdminDialog } from "@/context/admin-dialog-context";
 import { useAdminRealtime } from "@/context/admin-realtime-context";
 import { VALID_STATUS_TRANSITIONS } from "@/lib/constants/order.constants";
+import { PrintInvoiceMenu } from "@/components/invoice/PrintInvoiceMenu";
 import type { OrderStatus, PaymentStatus, DeliveryStatus } from "@/types/database.types";
 
 interface OrderDetail {
@@ -251,14 +251,8 @@ export default function AdminOrderDetailPage(props: PageProps) {
       subtitle={`Placed on ${new Date(order.created_at).toLocaleString()} • Customer: ${order.customer_name}`}
       actions={
         <div className="flex items-center space-x-2">
-          {/* Invoice Print Link */}
-          <Link
-            href={`/admin/orders/${orderId}/invoice`}
-            className="px-3 py-1.5 border border-slate-200 text-slate-700 text-xs font-mono rounded hover:bg-slate-50 flex items-center space-x-1.5 transition-colors"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Invoice</span>
-          </Link>
+          {/* Invoice Print Options Dropdown */}
+          <PrintInvoiceMenu orderId={orderId} />
 
           {allowedTransitions.map((targetStatus) => {
             const isDanger = targetStatus === "CANCELLED";
